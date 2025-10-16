@@ -1,0 +1,71 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Unity Library - ALL Unity integration files (too large for GitHub)
+/unityLibrary/
+**/unityLibrary/**
+*.unity
+*.unitypackage
+UnityPlayerGameActivity.java
+unity-classes.jar
+
+# Build outputs
+/app/build/
+/build/
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+
+# IDE files
+/.idea/
+/.vscode/
+settings.json
+*.backup
+*.tmp
+
+# Gradle files
+/.gradle/
+/.kotlin/
+/gradle/wrapper/
+
+# Database migration files (keep only essential ones)
+fix_*.sql
+
+# Large documentation/archive files
+*.zip
+*.rar
+*.7z
+
+# Native libraries (will be regenerated)
+/app/libs/
+*.so
+*.a
+
+# Temporary markdown files
+*_COMPLETE.md
+*_FIX.md
+*_SUMMARY.md
+*_STATUS.md
+*_GUIDE.md
+START_HERE.md
+CHECK_*.sql
+COMPLETE_*.sql
+QUICK_*.sql
+QUICK_*.md
+RUN_*.md
+WHY_*.md
