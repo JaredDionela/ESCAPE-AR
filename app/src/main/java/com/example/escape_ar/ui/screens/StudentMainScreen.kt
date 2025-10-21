@@ -47,8 +47,8 @@ data class QuizModule(
 @Composable
 fun StudentMainScreen(
     onQuizClick: (String) -> Unit,
+    onLessonsClick: (String, String) -> Unit, // moduleId, moduleName
     onProfileClick: () -> Unit,
-    onSettingsClick: () -> Unit,
     onUnityLaunch: () -> Unit,
     onLogout: () -> Unit
 ) {
@@ -190,13 +190,6 @@ fun StudentMainScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        IconButton(onClick = onSettingsClick) {
-                            Icon(
-                                Icons.Default.Settings,
-                                contentDescription = "Settings",
-                                tint = MetallicSilver
-                            )
-                        }
                         IconButton(onClick = onProfileClick) {
                             Icon(
                                 Icons.Default.Person,
@@ -224,47 +217,7 @@ fun StudentMainScreen(
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Learning Progress Card
-                item {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = CharcoalGrey.copy(alpha = 0.8f)
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(20.dp)) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = "Learning Progress",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = WhiteSmoke,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = "${(learningProgress * 100).toInt()}%",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    color = NeonCyan,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(12.dp))
-                            LinearProgressIndicator(
-                                progress = { learningProgress },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(8.dp)
-                                    .clip(RoundedCornerShape(4.dp)),
-                                color = NeonCyan,
-                                trackColor = DarkGrey
-                            )
-                        }
-                    }
-                }
-                
+
                 // AR Experience Card with Description
                 item {
                     Card(
@@ -326,6 +279,99 @@ fun StudentMainScreen(
                     }
                 }
                 
+                // Video Lessons Card
+                item {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = AmberAlert.copy(alpha = 0.2f)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.PlayCircle,
+                                    contentDescription = null,
+                                    tint = AmberAlert,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = "Video Lessons",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = WhiteSmoke,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            Text(
+                                text = "Watch engaging video tutorials and download learning materials. Each module includes YouTube lessons and downloadable files to help you master the concepts.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MetallicSilver,
+                                lineHeight = 20.sp
+                            )
+                            
+                            Spacer(modifier = Modifier.height(16.dp))
+                            
+                            // Module buttons in 2x2 grid
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    OutlinedButton(
+                                        onClick = { onLessonsClick("decantation", "Decantation") },
+                                        modifier = Modifier.weight(1f),
+                                        colors = ButtonDefaults.outlinedButtonColors(
+                                            contentColor = NeonCyan
+                                        )
+                                    ) {
+                                        Text("Decantation", fontSize = 12.sp)
+                                    }
+                                    OutlinedButton(
+                                        onClick = { onLessonsClick("organ_system", "Organ Systems") },
+                                        modifier = Modifier.weight(1f),
+                                        colors = ButtonDefaults.outlinedButtonColors(
+                                            contentColor = CrimsonRed
+                                        )
+                                    ) {
+                                        Text("Organs", fontSize = 12.sp)
+                                    }
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    OutlinedButton(
+                                        onClick = { onLessonsClick("simple_machines", "Simple Machines") },
+                                        modifier = Modifier.weight(1f),
+                                        colors = ButtonDefaults.outlinedButtonColors(
+                                            contentColor = AmberAlert
+                                        )
+                                    ) {
+                                        Text("Machines", fontSize = 12.sp)
+                                    }
+                                    OutlinedButton(
+                                        onClick = { onLessonsClick("solar_system", "Solar System") },
+                                        modifier = Modifier.weight(1f),
+                                        colors = ButtonDefaults.outlinedButtonColors(
+                                            contentColor = PurpleHaze
+                                        )
+                                    ) {
+                                        Text("Solar", fontSize = 12.sp)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
                 // Science Modules Card
                 item {
                     Card(
@@ -365,7 +411,7 @@ fun StudentMainScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                             
                             Button(
-                                onClick = { onQuizClick("quiz") },
+                                onClick = { onQuizClick("") },
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = NeonCyan,

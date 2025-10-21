@@ -79,7 +79,7 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                 _progress.value = userProgress
                 Log.d("ProfileViewModel", "Loaded ${userProgress.size} progress records")
                 
-                // Update UI state
+                // Update UI state with dynamic scoring based on actual questions
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     userName = user.fullName,
@@ -87,16 +87,19 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                     teacherName = teacherName,
                     section = section,
                     modules = modulesWithProgress.map { module ->
+                        // Score is stored as percentage (0-100) in database
+                        val scorePercentage = ((module.score ?: 0f).coerceIn(0f, 100f)).toInt()
                         ModuleProgress(
                             name = module.name,
-                            score = ((module.score ?: 0f).coerceIn(0f, 100f)).toInt(),
-                            maxScore = 100,
-                            isCompleted = module.isCompleted
+                            score = scorePercentage,
+                            maxScore = 100, // All modules scored out of 100%
+                            isCompleted = module.isCompleted,
+                            totalQuestions = module.totalQuestions
                         )
                     }
                 )
                 
-                Log.d("ProfileViewModel", "Profile UI state updated: userName=${user.fullName}, modules=${modulesWithProgress.size}")
+                Log.d("ProfileViewModel", "Profile UI state updated: userName=${user.fullName}, teacher=$teacherName, section=$section, modules=${modulesWithProgress.size}")
                 
             } catch (e: Exception) {
                 Log.e("ProfileViewModel", "Error loading profile", e)
@@ -150,7 +153,8 @@ data class ProfileUiState(
 
 data class ModuleProgress(
     val name: String,
-    val score: Int,
-    val maxScore: Int,
-    val isCompleted: Boolean
+    val score: Int,          // Percentage score (0-100)
+    val maxScore: Int,       // Always 100 (percentage-based)
+    val isCompleted: Boolean,
+    val totalQuestions: Int = 0  // Actual number of questions in this module
 )

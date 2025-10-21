@@ -121,14 +121,19 @@ fun AppNavigation(
             val context = androidx.compose.ui.platform.LocalContext.current
             
             StudentMainScreen(
-                onQuizClick = { route ->
-                    navController.navigate(route)
+                onQuizClick = { moduleId ->
+                    android.util.Log.d("MainActivity", "Quiz clicked with moduleId: $moduleId")
+                    if (moduleId.isEmpty()) {
+                        navController.navigate("quiz")
+                    } else {
+                        navController.navigate("quiz/$moduleId")
+                    }
+                },
+                onLessonsClick = { moduleId, moduleName ->
+                    navController.navigate("lessons/$moduleId/$moduleName")
                 },
                 onProfileClick = {
                     navController.navigate("profile")
-                },
-                onSettingsClick = {
-                    navController.navigate("settings")
                 },
                 onUnityLaunch = {
                     navController.navigate("unity")
@@ -154,28 +159,70 @@ fun AppNavigation(
             )
         }
         
-        composable("settings") {
-            SettingsScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
-                }
-            )
-        }
-        
         composable("quiz") {
-            QuizScreen(
-                moduleId = "",
-                onNavigateBack = {
+            android.util.Log.e("MainActivity", "🔥🔥🔥 QUIZ NAVIGATION - no moduleId")
+            android.util.Log.wtf("MainActivity", "ABOUT TO CALL QuizScreen() with empty moduleId")
+            
+            // Force fresh composition with unique key
+            androidx.compose.runtime.key("quiz_no_module") {
+                QuizScreen(
+                    moduleId = "",
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+            
+            android.util.Log.wtf("MainActivity", "AFTER calling QuizScreen()")
+        }
+        
+        composable(
+            route = "quiz/{moduleId}",
+            arguments = listOf(
+                androidx.navigation.navArgument("moduleId") {
+                    type = androidx.navigation.NavType.StringType
+                    defaultValue = ""
+                }
+            )
+        ) { backStackEntry ->
+            val moduleId = backStackEntry.arguments?.getString("moduleId") ?: ""
+            android.util.Log.e("MainActivity", "🔥🔥🔥 QUIZ NAVIGATION - moduleId: $moduleId")
+            
+            // Force fresh composition with unique key based on moduleId
+            androidx.compose.runtime.key("quiz_$moduleId") {
+                QuizScreen(
+                    moduleId = moduleId,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+        }
+        
+        composable("lessons/{moduleId}/{moduleName}") { backStackEntry ->
+            val moduleId = backStackEntry.arguments?.getString("moduleId") ?: ""
+            val moduleName = backStackEntry.arguments?.getString("moduleName") ?: ""
+            LessonsScreen(
+                moduleId = moduleId,
+                moduleName = moduleName,
+                onBackClick = {
                     navController.popBackStack()
+                },
+                onLessonClick = { lessonId, lessonTitle, youtubeVideoId ->
+                    navController.navigate("videoplayer/$lessonId/$lessonTitle/$youtubeVideoId")
                 }
             )
         }
         
-        composable("quiz/{moduleId}") { backStackEntry ->
-            val moduleId = backStackEntry.arguments?.getString("moduleId") ?: ""
-            QuizScreen(
-                moduleId = moduleId,
-                onNavigateBack = {
+        composable("videoplayer/{lessonId}/{lessonTitle}/{youtubeVideoId}") { backStackEntry ->
+            val lessonId = backStackEntry.arguments?.getString("lessonId") ?: ""
+            val lessonTitle = backStackEntry.arguments?.getString("lessonTitle") ?: ""
+            val youtubeVideoId = backStackEntry.arguments?.getString("youtubeVideoId") ?: ""
+            VideoPlayerScreen(
+                lessonId = lessonId,
+                lessonTitle = lessonTitle,
+                youtubeVideoId = youtubeVideoId,
+                onBackClick = {
                     navController.popBackStack()
                 }
             )

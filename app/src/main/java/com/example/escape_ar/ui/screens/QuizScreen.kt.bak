@@ -1,0 +1,926 @@
+package com.example.escape_ar.ui.screenspackage com.example.escape_ar.ui.screenspackage com.example.escape_ar.ui.screens
+
+
+
+import androidx.compose.foundation.background
+
+import androidx.compose.foundation.clickable
+
+import androidx.compose.foundation.layout.*import androidx.compose.foundation.layout.*import androidx.compose.animation.AnimatedVisibility
+
+import androidx.compose.foundation.lazy.grid.GridCells
+
+import androidx.compose.foundation.lazy.grid.LazyVerticalGridimport androidx.compose.material3.*import androidx.compose.animation.core.*
+
+import androidx.compose.foundation.lazy.grid.items
+
+import androidx.compose.foundation.shape.RoundedCornerShapeimport androidx.compose.runtime.*import androidx.compose.foundation.background
+
+import androidx.compose.material.icons.Icons
+
+import androidx.compose.material.icons.filled.*import androidx.compose.ui.Alignmentimport androidx.compose.foundation.layout.*
+
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+
+import androidx.compose.material3.*import androidx.compose.ui.Modifierimport androidx.compose.foundation.lazy.LazyColumn
+
+import androidx.compose.runtime.*
+
+import androidx.compose.ui.Alignmentimport androidx.compose.ui.unit.dpimport androidx.compose.foundation.lazy.items
+
+import androidx.compose.ui.Modifier
+
+import androidx.compose.ui.graphics.Brushimport androidx.compose.foundation.shape.RoundedCornerShape
+
+import androidx.compose.ui.graphics.vector.ImageVector
+
+import androidx.compose.ui.platform.LocalContext@Composableimport androidx.compose.foundation.shape.CircleShape
+
+import androidx.compose.ui.text.font.FontWeight
+
+import androidx.compose.ui.text.style.TextAlignfun QuizScreen(import androidx.compose.material.icons.Icons
+
+import androidx.compose.ui.unit.dp
+
+import androidx.lifecycle.ViewModelProvider    moduleId: String = "",import androidx.compose.material.icons.filled.*
+
+import androidx.lifecycle.viewmodel.compose.viewModel
+
+import com.example.escape_ar.ui.theme.*    onNavigateBack: () -> Unitimport androidx.compose.material.icons.automirrored.filled.ArrowBack
+
+import com.example.escape_ar.viewmodel.QuizViewModel
+
+) {import androidx.compose.material3.*
+
+@OptIn(ExperimentalMaterial3Api::class)
+
+@Composable    android.util.Log.wtf("QuizScreen", "═══════════════════════════════════")import androidx.compose.runtime.*
+
+fun QuizScreen(
+
+    moduleId: String = "",    android.util.Log.wtf("QuizScreen", "QUIZ SCREEN CALLED - FRESH FILE!")import androidx.compose.ui.Alignment
+
+    onNavigateBack: () -> Unit
+
+) {    android.util.Log.wtf("QuizScreen", "moduleId: '$moduleId'")import androidx.compose.ui.Modifier
+
+    android.util.Log.d("QuizScreen", "═══════════════════════════════════")
+
+    android.util.Log.d("QuizScreen", "QuizScreen started with moduleId: '$moduleId'")    android.util.Log.wtf("QuizScreen", "═══════════════════════════════════")import androidx.compose.ui.draw.scale
+
+    
+
+    val context = LocalContext.current    import androidx.compose.ui.graphics.Brush
+
+    val quizViewModel: QuizViewModel = viewModel(
+
+        factory = ViewModelProvider.AndroidViewModelFactory.getInstance(    Box(import androidx.compose.ui.graphics.vector.ImageVector
+
+            context.applicationContext as android.app.Application
+
+        )        modifier = Modifier.fillMaxSize(),import androidx.compose.ui.platform.LocalContext
+
+    )
+
+            contentAlignment = Alignment.Centerimport androidx.lifecycle.ViewModelProvider
+
+    var selectedModule by remember { mutableStateOf<QuizModuleData?>(null) }
+
+    var isLoadingQuestions by remember { mutableStateOf(false) }    ) {import androidx.lifecycle.viewmodel.compose.viewModel
+
+    var loadError by remember { mutableStateOf<String?>(null) }
+
+            Column(import androidx.compose.ui.text.font.FontWeight
+
+    // Define available modules
+
+    val modules = remember {            horizontalAlignment = Alignment.CenterHorizontally,import androidx.compose.ui.text.style.TextAlign
+
+        listOf(
+
+            QuizModuleData(            verticalArrangement = Arrangement.spacedBy(16.dp)import androidx.compose.ui.unit.dp
+
+                id = "decantation",
+
+                name = "Decantation",        ) {import com.example.escape_ar.ui.theme.*
+
+                description = "Learn how to separate mixtures",
+
+                icon = Icons.Default.Science,            Text("QUIZ SCREEN", style = MaterialTheme.typography.headlineLarge)
+
+                color = NeonCyan
+
+            ),            Text("ModuleId: $moduleId")@OptIn(ExperimentalMaterial3Api::class)
+
+            QuizModuleData(
+
+                id = "organ_system",            Button(onClick = onNavigateBack) {@Composable
+
+                name = "Organ Systems",
+
+                description = "Learn about human organ systems",                Text("Go Back")fun QuizScreen(
+
+                icon = Icons.Default.Favorite,
+
+                color = CrimsonRed            }    moduleId: String = "",
+
+            ),
+
+            QuizModuleData(        }    onNavigateBack: () -> Unit
+
+                id = "simple_machines",
+
+                name = "Simple Machines",    }) {
+
+                description = "Explore simple machines",
+
+                icon = Icons.Default.Settings,}    // COPY EXACT PATTERN FROM TESTQUIZSCREEN THAT WORKED
+
+                color = AmberAlert
+
+            ),    android.util.Log.wtf("QuizScreen", "═══════════════════════════════════")
+
+            QuizModuleData(    android.util.Log.wtf("QuizScreen", "QUIZ SCREEN CALLED!")
+
+                id = "solar_system",    android.util.Log.wtf("QuizScreen", "moduleId: '$moduleId'")
+
+                name = "Solar System",    android.util.Log.wtf("QuizScreen", "═══════════════════════════════════")
+
+                description = "Journey through space",    
+
+                icon = Icons.Default.Brightness7,    Box(
+
+                color = PurpleHaze        modifier = Modifier.fillMaxSize(),
+
+            )        contentAlignment = Alignment.Center
+
+        )    ) {
+
+    }        Text("QUIZ SCREEN - TESTING", style = MaterialTheme.typography.headlineLarge)
+
+        }
+
+    // Auto-select module if moduleId is provided}
+
+    LaunchedEffect(moduleId) {    
+
+        android.util.Log.d("QuizScreen", "LaunchedEffect triggered with moduleId: '$moduleId'")    var selectedModule by remember { mutableStateOf<QuizModuleData?>(null) }
+
+        if (moduleId.isNotEmpty() && selectedModule == null) {    var currentQuestionIndex by remember { mutableIntStateOf(0) }
+
+            val module = modules.find { it.id == moduleId }    var selectedAnswers by remember { mutableStateOf(listOf<Int>()) }
+
+            if (module != null) {    var showResults by remember { mutableStateOf(false) }
+
+                android.util.Log.d("QuizScreen", "Auto-selecting module: ${module.name}")    var score by remember { mutableIntStateOf(0) }
+
+                selectedModule = module    var isLoadingQuestions by remember { mutableStateOf(false) }
+
+            }    var loadError by remember { mutableStateOf<String?>(null) }
+
+        }    
+
+    }    val modules = remember {
+
+        listOf(
+
+    // Load questions when module is selected        QuizModuleData(
+
+    LaunchedEffect(selectedModule) {            id = "decantation",
+
+        selectedModule?.let { module ->            name = "Decantation",
+
+            android.util.Log.d("QuizScreen", "Loading questions for module: ${module.id}")            description = "Learn how to separate mixtures",
+
+            isLoadingQuestions = true            icon = Icons.Default.Science,
+
+            loadError = null            color = NeonCyan,
+
+                        totalQuestions = 0,
+
+            val result = quizViewModel.getQuizQuestionsByModule(module.id)            questions = emptyList<com.example.escape_ar.data.model.QuizQuestion>()
+
+            result.onSuccess { questions ->        ),
+
+                android.util.Log.d("QuizScreen", "✅ Loaded ${questions.size} questions")        QuizModuleData(
+
+                if (questions.isNotEmpty()) {            id = "organ_system",
+
+                    // Questions loaded successfully - pass to quiz components            name = "Organ Systems",
+
+                    QuizQuestionScreen(            description = "Learn about human organ systems",
+
+                        module = module,            icon = Icons.Default.Favorite,
+
+                        questions = questions,            color = CrimsonRed,
+
+                        currentQuestionIndex = 0,            totalQuestions = 0,
+
+                        selectedAnswers = emptyList(),            questions = emptyList<com.example.escape_ar.data.model.QuizQuestion>()
+
+                        onAnswerSelected = { _, _ -> },        ),
+
+                        onPreviousQuestion = {},        QuizModuleData(
+
+                        onNextQuestion = {},            id = "simple_machines",
+
+                        onSubmitQuiz = {},            name = "Simple Machines",
+
+                        onNavigateBack = onNavigateBack            description = "Explore simple machines",
+
+                    )            icon = Icons.Default.Settings,
+
+                } else {            color = AmberAlert,
+
+                    loadError = "No questions available for this module yet"            totalQuestions = 0,
+
+                }            questions = emptyList<com.example.escape_ar.data.model.QuizQuestion>()
+
+                isLoadingQuestions = false        ),
+
+            }.onFailure { error ->        QuizModuleData(
+
+                android.util.Log.e("QuizScreen", "❌ Failed to load questions: ${error.message}")            id = "solar_system",
+
+                loadError = error.message ?: "Failed to load questions"            name = "Solar System",
+
+                isLoadingQuestions = false            description = "Journey through space",
+
+            }            icon = Icons.Default.Brightness7,
+
+        }            color = PurpleHaze,
+
+    }            totalQuestions = 0,
+
+                questions = emptyList<com.example.escape_ar.data.model.QuizQuestion>()
+
+    Scaffold(        )
+
+        topBar = {    )
+
+            TopAppBar(}
+
+                title = { Text("Quiz") },    
+
+                navigationIcon = {    // Auto-select module when moduleId is provided
+
+                    IconButton(onClick = onNavigateBack) {    LaunchedEffect(moduleId) {
+
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")        android.util.Log.d("QuizScreen", "========= LaunchedEffect #1 (moduleId) triggered =========")
+
+                    }        android.util.Log.d("QuizScreen", "moduleId: '$moduleId'")
+
+                },        
+
+                colors = TopAppBarDefaults.topAppBarColors(        if (moduleId.isNotEmpty() && selectedModule == null) {
+
+                    containerColor = MaterialTheme.colorScheme.primary,            android.util.Log.d("QuizScreen", "Auto-selecting module with ID: $moduleId")
+
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary            val module = modules.find { it.id == moduleId }
+
+                )            if (module != null) {
+
+            )                android.util.Log.d("QuizScreen", "Found module: ${module.name}, setting as selected")
+
+        }                selectedModule = module
+
+    ) { paddingValues ->                currentQuestionIndex = 0
+
+        Box(                selectedAnswers = emptyList()
+
+            modifier = Modifier                showResults = false
+
+                .fillMaxSize()                score = 0
+
+                .padding(paddingValues)                loadError = null
+
+        ) {            } else {
+
+            when {                android.util.Log.e("QuizScreen", "Module not found with id: '$moduleId'")
+
+                selectedModule == null -> {            }
+
+                    // Show module selection        }
+
+                    ModuleSelectionScreen(    }
+
+                        modules = modules,    
+
+                        onModuleSelected = { module ->    // Load questions when a module is selected
+
+                            android.util.Log.d("QuizScreen", "Module selected: ${module.name}")    LaunchedEffect(selectedModule?.id) {
+
+                            selectedModule = module        android.util.Log.d("QuizScreen", "========= LaunchedEffect #2 (selectedModule) triggered =========")
+
+                        }        android.util.Log.d("QuizScreen", "selectedModule: ${selectedModule?.name}")
+
+                    )        
+
+                }        selectedModule?.let { module ->
+
+                isLoadingQuestions -> {            android.util.Log.d("QuizScreen", "Checking questions for module: ${module.id}")
+
+                    // Show loading            android.util.Log.d("QuizScreen", "Current questions count: ${module.questions.size}")
+
+                    Box(            
+
+                        modifier = Modifier.fillMaxSize(),            if (module.questions.isEmpty()) {
+
+                        contentAlignment = Alignment.Center                android.util.Log.d("QuizScreen", "Questions empty, loading from database...")
+
+                    ) {                isLoadingQuestions = true
+
+                        Column(                loadError = null
+
+                            horizontalAlignment = Alignment.CenterHorizontally,                
+
+                            verticalArrangement = Arrangement.spacedBy(16.dp)                android.util.Log.d("QuizScreen", "Calling quizViewModel.getQuizQuestionsByModule('${module.id}')")
+
+                        ) {                val result = quizViewModel.getQuizQuestionsByModule(module.id)
+
+                            CircularProgressIndicator()                android.util.Log.d("QuizScreen", "Result received: ${if (result.isSuccess) "SUCCESS" else "FAILURE"}")
+
+                            Text("Loading questions...")                
+
+                        }                result.onSuccess { questions ->
+
+                    }                    android.util.Log.d("QuizScreen", "SUCCESS: Loaded ${questions.size} questions")
+
+                }                    if (questions.isNotEmpty()) {
+
+                loadError != null -> {                        android.util.Log.d("QuizScreen", "Updating selectedModule with ${questions.size} questions")
+
+                    // Show error                        selectedModule = module.copy(
+
+                    Box(                            questions = questions,
+
+                        modifier = Modifier.fillMaxSize(),                            totalQuestions = questions.size
+
+                        contentAlignment = Alignment.Center                        )
+
+                    ) {                        android.util.Log.d("QuizScreen", "✅ Questions loaded and module updated!")
+
+                        Column(                    } else {
+
+                            horizontalAlignment = Alignment.CenterHorizontally,                        android.util.Log.e("QuizScreen", "❌ No questions returned from database!")
+
+                            verticalArrangement = Arrangement.spacedBy(16.dp),                        loadError = "No questions available for this module yet"
+
+                            modifier = Modifier.padding(32.dp)                    }
+
+                        ) {                    isLoadingQuestions = false
+
+                            Icon(                }.onFailure { error ->
+
+                                Icons.Default.Error,                    android.util.Log.e("QuizScreen", "❌ FAILED to load questions: ${error.message}", error)
+
+                                contentDescription = null,                    android.util.Log.e("QuizScreen", "Error type: ${error.javaClass.simpleName}")
+
+                                modifier = Modifier.size(64.dp),                    android.util.Log.e("QuizScreen", "Stack trace: ${error.stackTraceToString()}")
+
+                                tint = MaterialTheme.colorScheme.error                    loadError = error.message ?: "Failed to load questions"
+
+                            )                    isLoadingQuestions = false
+
+                            Text(                }
+
+                                text = loadError ?: "Unknown error",            } else {
+
+                                style = MaterialTheme.typography.bodyLarge,                android.util.Log.d("QuizScreen", "Module already has ${module.questions.size} questions loaded")
+
+                                textAlign = TextAlign.Center            }
+
+                            )        } ?: android.util.Log.d("QuizScreen", "selectedModule is null, nothing to load")
+
+                            Button(onClick = { selectedModule = null }) {    }
+
+                                Text("Back to Modules")    
+
+                            }    if (selectedModule == null) {
+
+                        }        // Module Selection Screen
+
+                    }        ModuleSelectionScreen(
+
+                }            modules = modules,
+
+            }            onModuleSelected = { 
+
+        }                android.util.Log.d("QuizScreen", "========= MODULE SELECTED: ${it.id} =========")
+
+    }                android.util.Log.d("QuizScreen", "Module name: ${it.name}, has ${it.questions.size} questions")
+
+}                selectedModule = it
+
+                android.util.Log.d("QuizScreen", "selectedModule set to: ${selectedModule?.id}")
+
+@Composable                currentQuestionIndex = 0
+
+private fun ModuleSelectionScreen(                selectedAnswers = emptyList()
+
+    modules: List<QuizModuleData>,                showResults = false
+
+    onModuleSelected: (QuizModuleData) -> Unit                score = 0
+
+) {                loadError = null
+
+    Column(            },
+
+        modifier = Modifier            onNavigateBack = onNavigateBack
+
+            .fillMaxSize()        )
+
+            .padding(16.dp)    } else if (isLoadingQuestions) {
+
+    ) {        // Loading state
+
+        Text(        Box(
+
+            text = "Select a Quiz Module",            modifier = Modifier
+
+            style = MaterialTheme.typography.headlineMedium,                .fillMaxSize()
+
+            fontWeight = FontWeight.Bold,                .background(DeepSpace),
+
+            modifier = Modifier.padding(bottom = 24.dp)            contentAlignment = Alignment.Center
+
+        )        ) {
+
+                    Column(
+
+        LazyVerticalGrid(                horizontalAlignment = Alignment.CenterHorizontally,
+
+            columns = GridCells.Fixed(2),                verticalArrangement = Arrangement.spacedBy(16.dp)
+
+            horizontalArrangement = Arrangement.spacedBy(16.dp),            ) {
+
+            verticalArrangement = Arrangement.spacedBy(16.dp)                CircularProgressIndicator(color = selectedModule!!.color)
+
+        ) {                Text(
+
+            items(modules) { module ->                    text = "Loading questions...",
+
+                ModuleCard(                    style = MaterialTheme.typography.bodyLarge,
+
+                    module = module,                    color = MaterialTheme.colorScheme.onSurface
+
+                    onClick = { onModuleSelected(module) }                )
+
+                )            }
+
+            }        }
+
+        }    } else if (loadError != null || selectedModule!!.questions.isEmpty()) {
+
+    }        // Error state - show error message or no questions available
+
+}        Box(
+
+            modifier = Modifier
+
+@Composable                .fillMaxSize()
+
+private fun ModuleCard(                .background(DeepSpace),
+
+    module: QuizModuleData,            contentAlignment = Alignment.Center
+
+    onClick: () -> Unit        ) {
+
+) {            Column(
+
+    Card(                horizontalAlignment = Alignment.CenterHorizontally,
+
+        modifier = Modifier                verticalArrangement = Arrangement.spacedBy(16.dp),
+
+            .fillMaxWidth()                modifier = Modifier.padding(32.dp)
+
+            .aspectRatio(1f)            ) {
+
+            .clickable(onClick = onClick),                Icon(
+
+        shape = RoundedCornerShape(16.dp),                    imageVector = Icons.Default.Error,
+
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)                    contentDescription = "Error",
+
+    ) {                    tint = MaterialTheme.colorScheme.error,
+
+        Box(                    modifier = Modifier.size(64.dp)
+
+            modifier = Modifier                )
+
+                .fillMaxSize()                Text(
+
+                .background(                    text = buildString {
+
+                    Brush.verticalGradient(                        appendLine("DEBUG INFO:")
+
+                        colors = listOf(                        appendLine("====================")
+
+                            module.color.copy(alpha = 0.7f),                        appendLine("Module ID: ${selectedModule!!.id}")
+
+                            module.color                        appendLine("Questions count: ${selectedModule!!.questions.size}")
+
+                        )                        appendLine("Loading: $isLoadingQuestions")
+
+                    )                        appendLine("Error: ${loadError ?: "None"}")
+
+                )                        appendLine("====================")
+
+                .padding(16.dp)                        appendLine()
+
+        ) {                        appendLine(loadError ?: "No questions loaded. Possible causes:\n\n1. RLS policies blocking access\n2. Supabase connection failed\n3. Module ID mismatch\n4. Questions don't exist in database")
+
+            Column(                    },
+
+                modifier = Modifier.fillMaxSize(),                    style = MaterialTheme.typography.bodySmall,
+
+                horizontalAlignment = Alignment.CenterHorizontally,                    color = MaterialTheme.colorScheme.onSurface,
+
+                verticalArrangement = Arrangement.Center                    textAlign = TextAlign.Center,
+
+            ) {                    modifier = Modifier.padding(16.dp)
+
+                Icon(                )
+
+                    imageVector = module.icon,                Button(
+
+                    contentDescription = null,                    onClick = {
+
+                    modifier = Modifier.size(48.dp),                        selectedModule = null
+
+                    tint = MaterialTheme.colorScheme.onPrimary                        loadError = null
+
+                )                    },
+
+                Spacer(modifier = Modifier.height(12.dp))                    colors = ButtonDefaults.buttonColors(
+
+                Text(                        containerColor = selectedModule!!.color
+
+                    text = module.name,                    )
+
+                    style = MaterialTheme.typography.titleMedium,                ) {
+
+                    fontWeight = FontWeight.Bold,                    Text("Back to Modules")
+
+                    color = MaterialTheme.colorScheme.onPrimary,                }
+
+                    textAlign = TextAlign.Center            }
+
+                )        }
+
+                Spacer(modifier = Modifier.height(4.dp))    } else if (!showResults) {
+
+                Text(        // Quiz Screen - only show if we have questions
+
+                    text = module.description,        QuizQuestionScreen(
+
+                    style = MaterialTheme.typography.bodySmall,            module = selectedModule!!,
+
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),            currentQuestionIndex = currentQuestionIndex,
+
+                    textAlign = TextAlign.Center            selectedAnswers = selectedAnswers,
+
+                )            onAnswerSelected = { questionIndex, answerIndex ->
+
+            }                selectedAnswers = selectedAnswers.toMutableList().apply {
+
+        }                    while (size <= questionIndex) add(-1)
+
+    }                    set(questionIndex, answerIndex)
+
+}                }
+
+            },
+
+// Data class for quiz modules            onNext = {
+
+data class QuizModuleData(                if (currentQuestionIndex < selectedModule!!.questions.size - 1) {
+
+    val id: String,                    currentQuestionIndex++
+
+    val name: String,                } else {
+
+    val description: String,                    // Calculate score
+
+    val icon: ImageVector,                    score = selectedAnswers.mapIndexed { index, answer ->
+
+    val color: androidx.compose.ui.graphics.Color                        if (index < selectedModule!!.questions.size && 
+
+)                            answer == selectedModule!!.questions[index].correctAnswer) 1 else 0
+
+                    }.sum()
+                    
+                    // Save quiz progress when quiz is completed
+                    val percentage = (score.toFloat() / selectedModule!!.questions.size.toFloat()) * 100f
+                    quizViewModel.completeModule(
+                        moduleId = selectedModule!!.id,
+                        score = percentage,
+                        questionsAnswered = score,
+                        totalQuestions = selectedModule!!.questions.size
+                    )
+                    
+                    showResults = true
+                }
+            },
+            onPrevious = {
+                if (currentQuestionIndex > 0) {
+                    currentQuestionIndex--
+                }
+            },
+            onBack = { selectedModule = null }
+        )
+    } else {
+        // Results Screen
+        QuizResultsScreen(
+            module = selectedModule!!,
+            score = score,
+            totalQuestions = selectedModule!!.questions.size,
+            quizViewModel = quizViewModel,
+            onRetry = {
+                currentQuestionIndex = 0
+                selectedAnswers = emptyList()
+                showResults = false
+                score = 0
+            },
+            onBackToModules = { selectedModule = null }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ModuleSelectionScreen(
+    modules: List<QuizModuleData>,
+    onModuleSelected: (QuizModuleData) -> Unit,
+    onNavigateBack: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        DeepSpace,
+                        DarkGrey.copy(alpha = 0.3f),
+                        DeepSpace
+                    )
+                )
+            )
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Science Modules",
+                        color = WhiteSmoke,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = NeonCyan
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = CharcoalGrey.copy(alpha = 0.9f)
+                )
+            )
+            
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = DarkGrey.copy(alpha = 0.6f)
+                        ),
+                        elevation = CardDefaults.cardElevation(4.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Info,
+                                contentDescription = null,
+                                tint = NeonCyan,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Complete each module to test your science knowledge",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MetallicSilver
+                            )
+                        }
+                    }
+                }
+                
+                items(modules) { module ->
+                    ModuleCard(
+                        module = module,
+                        onClick = { onModuleSelected(module) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ModuleCard(
+    module: QuizModuleData,
+    onClick: () -> Unit
+) {
+    val scale by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "scale"
+    )
+    
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .scale(scale),
+        colors = CardDefaults.cardColors(
+            containerColor = CharcoalGrey.copy(alpha = 0.8f)
+        ),
+        elevation = CardDefaults.cardElevation(12.dp)
+    ) {
+        Button(
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = androidx.compose.ui.graphics.Color.Transparent
+            ),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(60.dp)
+                        .background(
+                            module.color.copy(alpha = 0.2f),
+                            CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        module.icon,
+                        contentDescription = null,
+                        tint = module.color,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+                
+                Spacer(modifier = Modifier.width(20.dp))
+                
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = module.name,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = WhiteSmoke,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = module.description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MetallicSilver
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "${module.totalQuestions} Questions",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = module.color
+                    )
+                }
+                
+                Icon(
+                    Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = MetallicSilver
+                )
+            }
+        }
+    }
+}
+
+data class QuizModuleData(
+    val id: String,
+    val name: String,
+    val description: String,
+    val icon: ImageVector,
+    val color: androidx.compose.ui.graphics.Color,
+    val totalQuestions: Int,
+    val questions: List<com.example.escape_ar.data.model.QuizQuestion>
+)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ModuleCard(
+    module: QuizModuleData,
+    onClick: () -> Unit
+) {
+    val scale by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "scale"
+    )
+    
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .scale(scale),
+        colors = CardDefaults.cardColors(
+            containerColor = CharcoalGrey.copy(alpha = 0.8f)
+        ),
+        elevation = CardDefaults.cardElevation(12.dp)
+    ) {
+        Button(
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = androidx.compose.ui.graphics.Color.Transparent
+            ),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(60.dp)
+                        .background(
+                            module.color.copy(alpha = 0.2f),
+                            CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        module.icon,
+                        contentDescription = null,
+                        tint = module.color,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+                
+                Spacer(modifier = Modifier.width(20.dp))
+                
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = module.name,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = WhiteSmoke,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = module.description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MetallicSilver
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "${module.totalQuestions} Questions",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = module.color
+                    )
+                }
+                
+                Icon(
+                    Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = MetallicSilver
+                )
+            }
+        }
+    }
+}

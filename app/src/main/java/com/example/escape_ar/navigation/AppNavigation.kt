@@ -39,11 +39,11 @@ fun AppNavigation(
                 onQuizClick = { moduleId ->
                     navController.navigate("${Screen.Quiz.route}/$moduleId")
                 },
+                onLessonsClick = { moduleId, moduleName ->
+                    navController.navigate("lessons/$moduleId/$moduleName")
+                },
                 onProfileClick = {
                     navController.navigate(Screen.Profile.route)
-                },
-                onSettingsClick = {
-                    navController.navigate(Screen.Settings.route)
                 },
                 onUnityLaunch = {
                     navController.navigate("unity")
@@ -64,22 +64,25 @@ fun AppNavigation(
             )
         }
         
-        composable(Screen.Quiz.route) {
+        composable(
+            route = "${Screen.Quiz.route}/{moduleId}",
+            arguments = listOf(
+                androidx.navigation.navArgument("moduleId") {
+                    type = androidx.navigation.NavType.StringType
+                    defaultValue = ""
+                }
+            )
+        ) { backStackEntry ->
+            val moduleId = backStackEntry.arguments?.getString("moduleId") ?: ""
             QuizScreen(
+                moduleId = moduleId,
                 onNavigateBack = {
                     navController.popBackStack()
                 }
             )
         }
         
-        composable(Screen.Settings.route) {
-            SettingsScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
-                }
-            )
-        }
-        
+    // Settings screen removed
     // Admin screen removed
     }
 }
@@ -90,6 +93,6 @@ sealed class Screen(val route: String) {
     object Student : Screen("student")
     object Profile : Screen("profile")
     object Quiz : Screen("quiz")
-    object Settings : Screen("settings")
+    // object Settings : Screen("settings") // removed
     // object Admin : Screen("admin") // removed
 }

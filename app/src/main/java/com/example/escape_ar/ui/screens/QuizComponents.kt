@@ -19,19 +19,63 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.escape_ar.ui.theme.*
+import com.example.escape_ar.data.model.QuizQuestion // Import the database model
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuizQuestionScreen(
     module: QuizModuleData,
+    questions: List<QuizQuestion>,
     currentQuestionIndex: Int,
     selectedAnswers: List<Int>,
     onAnswerSelected: (Int, Int) -> Unit,
-    onNext: () -> Unit,
-    onPrevious: () -> Unit,
-    onBack: () -> Unit
+    onPreviousQuestion: () -> Unit,
+    onNextQuestion: () -> Unit,
+    onSubmitQuiz: () -> Unit,
+    onNavigateBack: () -> Unit
 ) {
-    val currentQuestion = module.questions[currentQuestionIndex]
+    // Log for debugging
+    android.util.Log.d("QuizComponents", "========= QuizDisplay called =========")
+    android.util.Log.d("QuizComponents", "Module: ${module.name}")
+    android.util.Log.d("QuizComponents", "Questions count: ${questions.size}")
+    android.util.Log.d("QuizComponents", "Current index: $currentQuestionIndex")
+    
+    // Safety check - prevent crash if questions list is empty
+    if (questions.isEmpty() || currentQuestionIndex >= questions.size) {
+        android.util.Log.e("QuizComponents", "NO QUESTIONS AVAILABLE!")
+        android.util.Log.e("QuizComponents", "Questions empty: ${questions.isEmpty()}")
+        android.util.Log.e("QuizComponents", "Index >= size: ${currentQuestionIndex >= questions.size}")
+        
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(DeepSpace),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Icon(
+                    Icons.Default.Error,
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    tint = CrimsonRed
+                )
+                Text(
+                    "No questions available",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = WhiteSmoke
+                )
+                Button(onClick = onNavigateBack) {
+                    Text("Go Back")
+                }
+            }
+        }
+        return
+    }
+    
+    val currentQuestion: com.example.escape_ar.data.model.QuizQuestion = questions[currentQuestionIndex]
     val selectedAnswer = selectedAnswers.getOrElse(currentQuestionIndex) { -1 }
     
     Box(
@@ -60,14 +104,14 @@ fun QuizQuestionScreen(
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(
-                            text = "Question ${currentQuestionIndex + 1} of ${module.questions.size}",
+                            text = "Question ${currentQuestionIndex + 1} of ${questions.size}",
                             color = MetallicSilver,
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = onNavigateBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
@@ -82,7 +126,7 @@ fun QuizQuestionScreen(
             
             // Progress Bar
             LinearProgressIndicator(
-                progress = { (currentQuestionIndex + 1).toFloat() / module.questions.size },
+                progress = { (currentQuestionIndex + 1).toFloat() / questions.size },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(4.dp),
@@ -128,7 +172,7 @@ fun QuizQuestionScreen(
                         Spacer(modifier = Modifier.height(20.dp))
                         
                         Text(
-                            text = currentQuestion.question,
+                            text = currentQuestion.questionText, // Fixed: use questionText from database model
                             style = MaterialTheme.typography.titleLarge,
                             color = WhiteSmoke,
                             lineHeight = MaterialTheme.typography.titleLarge.lineHeight * 1.3
@@ -142,7 +186,7 @@ fun QuizQuestionScreen(
                 Column(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    currentQuestion.options.forEachIndexed { index, option ->
+                    currentQuestion.getOptions().forEachIndexed { index, option -> // Fixed: use getOptions() helper
                         AnswerOption(
                             text = option,
                             isSelected = selectedAnswer == index,
@@ -163,7 +207,7 @@ fun QuizQuestionScreen(
                     // Previous Button
                     if (currentQuestionIndex > 0) {
                         OutlinedButton(
-                            onClick = onPrevious,
+                            onClick = onPreviousQuestion,
                             colors = ButtonDefaults.outlinedButtonColors(
                                 contentColor = MetallicSilver
                             ),
@@ -185,7 +229,7 @@ fun QuizQuestionScreen(
                     
                     // Next/Finish Button
                     Button(
-                        onClick = onNext,
+                        onClick = onNextQuestion,
                         enabled = selectedAnswer != -1,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = module.color,
@@ -196,12 +240,12 @@ fun QuizQuestionScreen(
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
-                            text = if (currentQuestionIndex == module.questions.size - 1) "Finish" else "Next",
+                            text = if (currentQuestionIndex == questions.size - 1) "Finish" else "Next",
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Icon(
-                            if (currentQuestionIndex == module.questions.size - 1) Icons.Default.Check 
+                            if (currentQuestionIndex == questions.size - 1) Icons.Default.Check 
                             else Icons.AutoMirrored.Filled.ArrowForward,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp)
@@ -301,7 +345,7 @@ fun QuizResultsScreen(
     totalQuestions: Int,
     quizViewModel: com.example.escape_ar.viewmodel.QuizViewModel,
     onRetry: () -> Unit,
-    onBackToModules: () -> Unit
+    onNavigateBackToModules: () -> Unit
 ) {
     // Progress is already saved by the QuizScreen when the quiz completes
     // No need to save it again here
@@ -446,7 +490,7 @@ fun QuizResultsScreen(
                         }
                         
                         Button(
-                            onClick = onBackToModules,
+                            onClick = onNavigateBackToModules,
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = NeonCyan,

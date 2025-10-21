@@ -15,6 +15,64 @@ data class User(
 )
 
 @Serializable
+data class QuizQuestion(
+    val id: String,
+    @SerialName("module_id")
+    val moduleId: String,
+    @SerialName("question_text")
+    val questionText: String,
+    @SerialName("option_a")
+    val optionA: String,
+    @SerialName("option_b")
+    val optionB: String,
+    @SerialName("option_c")
+    val optionC: String,
+    @SerialName("option_d")
+    val optionD: String,
+    @SerialName("correct_answer")
+    val correctAnswer: String, // "A", "B", "C", or "D"
+    @SerialName("order_index")
+    val orderIndex: Int,
+    @SerialName("created_at")
+    val createdAt: String? = null
+) {
+    // Helper function to get options as a list
+    fun getOptions(): List<String> = listOf(optionA, optionB, optionC, optionD)
+    
+    // Helper function to get correct answer index (0-3)
+    fun getCorrectAnswerIndex(): Int = when (correctAnswer) {
+        "A" -> 0
+        "B" -> 1
+        "C" -> 2
+        "D" -> 3
+        else -> 0
+    }
+}
+
+@Serializable
+data class QuizResult(
+    val id: String? = null,
+    @SerialName("user_id")
+    val userId: String,
+    @SerialName("question_id")
+    val questionId: String? = null, // Optional for summary results
+    @SerialName("module_id")
+    val moduleId: String,
+    @SerialName("selected_answer")
+    val selectedAnswer: String? = null, // "A", "B", "C", or "D" - Optional for summary
+    @SerialName("is_correct")
+    val isCorrect: Boolean = false,
+    @SerialName("score_percentage")
+    val scorePercentage: Float? = null, // Flexible scoring
+    @SerialName("total_questions")
+    val totalQuestions: Int? = null, // How many questions in this quiz
+    @SerialName("correct_answers")
+    val correctAnswers: Int? = null, // How many correct
+    @SerialName("created_at")
+    val createdAt: String? = null
+)
+
+@Serializable
 data class QuizProgress(
     val id: String? = null,
     @SerialName("user_id")

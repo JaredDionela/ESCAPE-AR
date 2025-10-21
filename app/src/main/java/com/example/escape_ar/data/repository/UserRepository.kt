@@ -42,7 +42,7 @@ object KylonModules {
             title = "Chemical Separation Lab",
             description = "Master decantation and filtration techniques to purify corrupted lab samples.",
             storylineContext = "The Labyrinth has contaminated the water supply. Use your chemistry knowledge to separate clean water from pollutants using decantation principles.",
-            questionCount = 12,
+            questionCount = 10,
             difficultyLevel = "beginner",
             colorHex = "#00FFFF"
         ),
@@ -51,7 +51,7 @@ object KylonModules {
             title = "Human Body Systems", 
             description = "Understand how KYLON's biological systems work to ensure optimal performance.",
             storylineContext = "KYLON's bio-mechanical systems are failing. Analyze human organ systems to understand how to repair and enhance KYLON's life support mechanisms.",
-            questionCount = 15,
+            questionCount = 10,
             difficultyLevel = "intermediate",
             colorHex = "#FF4444"
         ),
@@ -60,16 +60,16 @@ object KylonModules {
             title = "Mechanical Engineering",
             description = "Study simple machines and mechanical principles essential for lab equipment.",
             storylineContext = "The Labyrinth's mechanical traps use complex simple machine combinations. Master these principles to navigate the facility and reach KYLON.",
-            questionCount = 14,
+            questionCount = 10,
             difficultyLevel = "intermediate", 
             colorHex = "#FFA500"
         ),
         KylonModuleData(
             id = "solar_system",
-            title = "Astronomical Navigation",
+            title = " Navigation",
             description = "Master solar system knowledge for space-based rescue missions.",
-            storylineContext = "KYLON contains star maps essential for humanity's future. Learn the solar system to decode KYLON's astronomical databases and plan the escape route.",
-            questionCount = 18,
+            storylineContext = "KYLON contains star maps essential for humanity's future. Learn the solar system to decode KYLON's  databases and plan the escape route.",
+            questionCount = 10,
             difficultyLevel = "advanced",
             colorHex = "#9933FF"
         )
@@ -426,6 +426,40 @@ class UserRepository(private val context: Context? = null) {
         }
     }
     
+    // Helper function to get actual question count from database
+    private suspend fun getModuleQuestionCount(moduleId: String): Int = withContext(Dispatchers.IO) {
+        val token = accessToken
+        if (token.isNullOrBlank()) {
+            Log.w("UserRepository", "No access token for question count; using default 10")
+            return@withContext 10
+        }
+        
+        try {
+            val base = normalizeBaseUrl(supabase.supabaseUrl)
+            val url = "$base/rest/v1/quiz_questions?module_id=eq.$moduleId&select=id"
+            
+            val resp = http.get(url) {
+                header("apikey", supabase.supabaseKey)
+                header("Authorization", "Bearer $token")
+                header("Accept", "application/json")
+            }
+            
+            if (resp.status.isSuccess()) {
+                val text = resp.bodyAsText()
+                val jsonArray = Json.parseToJsonElement(text).jsonArray
+                val count = jsonArray.size
+                Log.d("UserRepository", "Module $moduleId has $count questions in database")
+                return@withContext count
+            } else {
+                Log.w("UserRepository", "Failed to fetch question count for $moduleId: ${resp.status}")
+                return@withContext 10 // fallback
+            }
+        } catch (e: Exception) {
+            Log.w("UserRepository", "Error fetching question count for $moduleId: ${e.message}")
+            return@withContext 10 // fallback
+        }
+    }
+    
     // Quiz and module methods using real Supabase database
     suspend fun getUserModulesWithProgress(userId: String): List<Module> = withContext(Dispatchers.IO) {
         if (!SupabaseConfig.isRealSupabase) {
@@ -480,24 +514,31 @@ class UserRepository(private val context: Context? = null) {
             
             val progressMap: Map<String, UserProgress> = rows.associateBy { it.module }
             
+            // Fetch actual question counts from database for each module
             KylonModules.modules.map { km ->
                 val row = progressMap[km.id]
+                val actualQuestionCount = getModuleQuestionCount(km.id)
                 Module(
                     id = km.id,
                     name = km.title,
                     description = km.description,
-                    totalQuestions = km.questionCount,
+                    totalQuestions = actualQuestionCount,
                     isCompleted = row?.completed ?: false,
                     score = row?.bestScore
                 ).also {
-                    Log.d("UserRepository", "Module ${km.title}: completed=${it.isCompleted}, score=${it.score}")
+                    Log.d("UserRepository", "Module ${km.title}: completed=${it.isCompleted}, score=${it.score}, questions=$actualQuestionCount")
                 }
             }
         } catch (e: Exception) {
             Log.e("UserRepository", "Error fetching progress via REST", e)
-            // Return base modules without progress rather than empty list
+            // Return base modules without progress, but with actual question counts if available
             KylonModules.modules.map { k -> 
-                Module(k.id, k.title, k.description, k.questionCount, isCompleted = false, score = null) 
+                val questionCount = try {
+                    getModuleQuestionCount(k.id)
+                } catch (qe: Exception) {
+                    k.questionCount // fallback to hardcoded if fetch fails
+                }
+                Module(k.id, k.title, k.description, questionCount, isCompleted = false, score = null) 
             }
         }
     }
@@ -556,9 +597,10 @@ class UserRepository(private val context: Context? = null) {
             val currentBestScore = getCurrentBestScore(quizProgress.userId, quizProgress.module)
             val newScore = quizProgress.score.toInt()
             val finalBestScore = maxOf(currentBestScore, newScore)
-            val isCompleted = finalBestScore >= 70
+            // Mark as completed once ANY quiz attempt is made (not just 70%+)
+            val isCompleted = true  // Always true when quiz is submitted
             
-            Log.d("UserRepository", "Score comparison: current=$currentBestScore, new=$newScore, final=$finalBestScore")
+            Log.d("UserRepository", "Score comparison: current=$currentBestScore, new=$newScore, final=$finalBestScore, completed=$isCompleted")
             
             val base = normalizeBaseUrl(supabase.supabaseUrl)
             
@@ -718,7 +760,7 @@ class UserRepository(private val context: Context? = null) {
     }
     
     /**
-     * Create extended profile with teacher name and section, plus default settings
+     * Create extended profile with teacher name and section
      */
     private suspend fun ensureExtendedProfileAndSettings(
         userId: String,
@@ -763,31 +805,8 @@ class UserRepository(private val context: Context? = null) {
                 Log.w("UserRepository", "Extended profile creation failed: ${profileResp.status} - $errorBody")
             }
             
-            // Create default settings
-            val settingsUrl = "$base/rest/v1/user_settings"
-            val settingsBody = buildJsonObject {
-                put("user_id", userId)
-                put("music_volume", 0.7)
-                put("sfx_volume", 0.7)
-                put("captions_enabled", true)
-            }.toString()
-            
-            val settingsResp = http.post(settingsUrl) {
-                header("apikey", supabase.supabaseKey)
-                header("Authorization", "Bearer $token")
-                header("Prefer", "resolution=merge-duplicates")
-                contentType(ContentType.Application.Json)
-                setBody(settingsBody)
-            }
-            
-            if (settingsResp.status.isSuccess()) {
-                Log.d("UserRepository", "Default settings created for $userId")
-            } else {
-                Log.w("UserRepository", "Settings creation failed: ${settingsResp.status}")
-            }
-            
         } catch (e: Exception) {
-            Log.w("UserRepository", "Failed to create extended profile/settings: ${e.message}")
+            Log.w("UserRepository", "Failed to create extended profile: ${e.message}")
         }
     }
 

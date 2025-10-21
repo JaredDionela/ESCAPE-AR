@@ -53,7 +53,7 @@ data class KylonModule(
     val storylineContext: String,
     val difficultyLevel: String = "intermediate",
     val estimatedTimeMinutes: Int = 20,
-    val questionCount: Int = 10,
+    
     val topics: List<String> = emptyList(),
     val iconName: String = "science",
     val colorTheme: String = "#00FFFF"
@@ -72,23 +72,6 @@ data class UserProgressSummary(
     val totalTimeHours: Double
 )
 
-@Serializable
-data class QuizResult(
-    val moduleId: String,
-    val score: Int,
-    val maxScore: Int,
-    val timeSpent: Int,
-    val answers: List<QuizAnswer> = emptyList()
-)
-
-@Serializable
-data class QuizAnswer(
-    val questionId: String,
-    val selectedAnswer: String,
-    val isCorrect: Boolean,
-    val timeSpent: Int = 0
-)
-
 // Hard-coded KYLON modules (no database needed)
 object KylonModules {
     val modules = listOf(
@@ -99,7 +82,7 @@ object KylonModules {
             storylineContext = "The Labyrinth has contaminated the water supply. Use your chemistry knowledge to separate clean water from pollutants using decantation principles.",
             difficultyLevel = "beginner",
             estimatedTimeMinutes = 18,
-            questionCount = 12,
+           
             topics = listOf("decantation", "filtration", "separation", "chemistry"),
             iconName = "science",
             colorTheme = "#00FFFF"
@@ -111,7 +94,7 @@ object KylonModules {
             storylineContext = "KYLON's bio-mechanical systems are failing. Analyze human organ systems to understand how to repair and enhance KYLON's life support mechanisms.",
             difficultyLevel = "intermediate",
             estimatedTimeMinutes = 22,
-            questionCount = 15,
+            
             topics = listOf("anatomy", "physiology", "organ_system", "biology"),
             iconName = "favorite",
             colorTheme = "#FF4444"
@@ -123,7 +106,7 @@ object KylonModules {
             storylineContext = "The Labyrinth's mechanical traps use complex simple machine combinations. Master these principles to navigate the facility and reach KYLON.",
             difficultyLevel = "intermediate",
             estimatedTimeMinutes = 20,
-            questionCount = 14,
+           
             topics = listOf("simple_machines", "physics", "mechanics", "engineering"),
             iconName = "build",
             colorTheme = "#FFA500"
@@ -135,7 +118,7 @@ object KylonModules {
             storylineContext = "KYLON contains star maps essential for humanity's future. Learn the solar system to decode KYLON's astronomical databases and plan the escape route.",
             difficultyLevel = "advanced",
             estimatedTimeMinutes = 28,
-            questionCount = 18,
+            
             topics = listOf("astronomy", "solar_system", "space", "navigation"),
             iconName = "public",
             colorTheme = "#9933FF"

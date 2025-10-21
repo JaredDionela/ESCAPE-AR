@@ -67,22 +67,29 @@ fun ProfileScreen(
     var isSaving by remember { mutableStateOf(false) }
     var saveError by remember { mutableStateOf<String?>(null) }
     
-    // Auto-refresh when screen resumes
+    // Auto-refresh when screen resumes OR when first loaded
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                android.util.Log.d("ProfileScreen", "ON_RESUME event - refreshing data")
                 viewModel.refreshData()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
+        
+        // Also refresh immediately when screen is first composed
+        android.util.Log.d("ProfileScreen", "ProfileScreen composed - initial refresh")
+        viewModel.refreshData()
+        
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
     
     val totalModules = uiState.modules.size.takeIf { it > 0 } ?: 4
     val completedModules = uiState.modules.count { it.isCompleted }
-    val totalScore = uiState.modules.sumOf { it.score }
-    val maxPossibleScore = uiState.modules.sumOf { it.maxScore }.takeIf { it > 0 } ?: (totalModules * 100)
+    val averageScore = if (uiState.modules.isNotEmpty()) {
+        uiState.modules.sumOf { it.score } / uiState.modules.size
+    } else 0
     
     Box(
         modifier = Modifier
@@ -180,48 +187,73 @@ fun ProfileScreen(
                             color = MetallicSilver
                         )
                         
-                        // Teacher Name and Section
-                        if (uiState.teacherName != null || uiState.section != null) {
-                            Spacer(modifier = Modifier.height(8.dp))
+                        // Teacher Name and Section - Enhanced Display
+                        if (!uiState.teacherName.isNullOrBlank() || !uiState.section.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.height(12.dp))
                             
-                            if (uiState.teacherName != null) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(horizontal = 4.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Default.School,
-                                        contentDescription = null,
-                                        tint = NeonCyan,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "Teacher: ${uiState.teacherName}",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MetallicSilver
-                                    )
-                                }
-                            }
-                            
-                            if (uiState.section != null) {
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(horizontal = 4.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Default.Class,
-                                        contentDescription = null,
-                                        tint = NeonCyan,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "Section: ${uiState.section}",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MetallicSilver
-                                    )
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = DarkGrey.copy(alpha = 0.4f)
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    if (!uiState.teacherName.isNullOrBlank()) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                Icons.Default.School,
+                                                contentDescription = null,
+                                                tint = AmberAlert,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Column {
+                                                Text(
+                                                    text = "Teacher",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MetallicSilver
+                                                )
+                                                Text(
+                                                    text = uiState.teacherName!!,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = WhiteSmoke,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                            }
+                                        }
+                                    }
+                                    
+                                    if (!uiState.section.isNullOrBlank()) {
+                                        if (!uiState.teacherName.isNullOrBlank()) {
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                        }
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Class,
+                                                contentDescription = null,
+                                                tint = NeonCyan,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Column {
+                                                Text(
+                                                    text = "Section",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MetallicSilver
+                                                )
+                                                Text(
+                                                    text = uiState.section!!,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = WhiteSmoke,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -233,9 +265,8 @@ fun ProfileScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
-                            StatItem("Modules", "$completedModules/$totalModules")
-                            StatItem("Total Score", "$totalScore/$maxPossibleScore")
-                            StatItem("Progress", "${(completedModules * 100 / totalModules)}%")
+                            StatItem("Completed", "$completedModules/$totalModules")
+                            StatItem("Final Grade", "$averageScore%")
                         }
                         
                         Spacer(modifier = Modifier.height(16.dp))
@@ -383,63 +414,128 @@ fun ProfileScreen(
                         
                         Spacer(modifier = Modifier.height(16.dp))
                         
-                        if (completedModules > 0) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    Icons.Default.CheckCircle,
-                                    contentDescription = null,
-                                    tint = GlowGreen,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "First Steps - Complete your first module",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = WhiteSmoke
-                                )
-                            }
+                        // Calculate average score across completed modules
+                        val averageScore = if (completedModules > 0) {
+                            uiState.modules.filter { it.isCompleted }.map { it.score }.average().toInt()
+                        } else {
+                            0
                         }
                         
-                        if (completedModules >= 2) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    Icons.Default.CheckCircle,
-                                    contentDescription = null,
-                                    tint = GlowGreen,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "Knowledge Seeker - Complete 2 modules",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = WhiteSmoke
-                                )
-                            }
+                        // Achievement: First Steps (Complete first module)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                if (completedModules > 0) Icons.Default.CheckCircle else Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = if (completedModules > 0) GlowGreen else MetallicSilver,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "🎯 First Steps - Complete your first module",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (completedModules > 0) WhiteSmoke else MetallicSilver
+                            )
                         }
                         
-                        if (completedModules < totalModules) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    Icons.Default.Lock,
-                                    contentDescription = null,
-                                    tint = MetallicSilver,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "Escape Master - Complete all modules",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MetallicSilver
-                                )
-                            }
+                        // Achievement: Knowledge Seeker (Complete 2 modules)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                if (completedModules >= 2) Icons.Default.CheckCircle else Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = if (completedModules >= 2) GlowGreen else MetallicSilver,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "📚 Knowledge Seeker - Complete 2 modules",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (completedModules >= 2) WhiteSmoke else MetallicSilver
+                            )
+                        }
+                        
+                        // Achievement: Halfway There (Complete half of modules)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                if (completedModules >= totalModules / 2 && totalModules > 0) Icons.Default.CheckCircle else Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = if (completedModules >= totalModules / 2 && totalModules > 0) GlowGreen else MetallicSilver,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "⭐ Halfway There - Complete ${totalModules / 2} modules",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (completedModules >= totalModules / 2 && totalModules > 0) WhiteSmoke else MetallicSilver
+                            )
+                        }
+                        
+                        // Achievement: Perfect Score (Get 100% on any module)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val hasPerfectScore = uiState.modules.any { it.isCompleted && it.score >= 100 }
+                            Icon(
+                                if (hasPerfectScore) Icons.Default.CheckCircle else Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = if (hasPerfectScore) GlowGreen else MetallicSilver,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "💯 Perfect Score - Get 100% on any module",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (hasPerfectScore) WhiteSmoke else MetallicSilver
+                            )
+                        }
+                        
+                        // Achievement: Outstanding Student (Average 90%+ across all completed)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val isOutstanding = completedModules > 0 && averageScore >= 90
+                            Icon(
+                                if (isOutstanding) Icons.Default.CheckCircle else Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = if (isOutstanding) GlowGreen else MetallicSilver,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "🌟 Outstanding Student - Average 90%+ score",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (isOutstanding) WhiteSmoke else MetallicSilver
+                            )
+                        }
+                        
+                        // Achievement: Escape Master (Complete all modules)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val isEscapeMaster = completedModules == totalModules && totalModules > 0
+                            Icon(
+                                if (isEscapeMaster) Icons.Default.CheckCircle else Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = if (isEscapeMaster) AmberAlert else MetallicSilver,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "🏆 Escape Master - Complete all $totalModules modules",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (isEscapeMaster) AmberAlert else MetallicSilver,
+                                fontWeight = if (isEscapeMaster) FontWeight.Bold else FontWeight.Normal
+                            )
                         }
                     }
                 }
@@ -565,20 +661,31 @@ private fun ModuleProgressCard(module: ModuleProgress) {
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = module.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = WhiteSmoke,
-                        fontWeight = FontWeight.Medium
-                    )
+                    Column {
+                        Text(
+                            text = module.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = WhiteSmoke,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
                 
-                Text(
-                    text = "${module.score}/${module.maxScore}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (module.isCompleted) GlowGreen else MetallicSilver,
-                    fontWeight = FontWeight.Bold
-                )
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "${module.score}%",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = if (module.isCompleted) GlowGreen else MetallicSilver,
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (module.isCompleted) {
+                        Text(
+                            text = "Passed",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = GlowGreen
+                        )
+                    }
+                }
             }
             
             Spacer(modifier = Modifier.height(12.dp))

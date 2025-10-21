@@ -1,13 +1,12 @@
 package com.example.escape_ar.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -19,12 +18,12 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import com.example.escape_ar.ui.theme.*
+import com.example.escape_ar.viewmodel.QuizViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,9 +31,13 @@ fun QuizScreen(
     moduleId: String = "",
     onNavigateBack: () -> Unit
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val quizViewModel: com.example.escape_ar.viewmodel.QuizViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
-        factory = androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.getInstance(
+
+    android.util.Log.d("QuizScreen", "═══════════════════════════════════")
+    android.util.Log.d("QuizScreen", "QuizScreen started with moduleId: '$moduleId'")
+    
+    val context = LocalContext.current
+    val quizViewModel: QuizViewModel = viewModel(
+        factory = ViewModelProvider.AndroidViewModelFactory.getInstance(
             context.applicationContext as android.app.Application
         )
     )
@@ -44,117 +47,278 @@ fun QuizScreen(
     var selectedAnswers by remember { mutableStateOf(listOf<Int>()) }
     var showResults by remember { mutableStateOf(false) }
     var score by remember { mutableIntStateOf(0) }
+    var isLoadingQuestions by remember { mutableStateOf(false) }
+    var loadError by remember { mutableStateOf<String?>(null) }
     
     val modules = remember {
         listOf(
             QuizModuleData(
                 id = "decantation",
                 name = "Decantation",
-                description = "Learn how to separate mixtures by carefully pouring off liquids",
+                description = "Learn how to separate mixtures",
                 icon = Icons.Default.Science,
                 color = NeonCyan,
-                totalQuestions = 5,
-                questions = getDecantationQuestions()
+                totalQuestions = 0,
+                questions = emptyList()
             ),
             QuizModuleData(
                 id = "organ_system",
-                name = "Organ Systems", 
-                description = "Discover how different organ systems work together in the human body",
+                name = "Organ Systems",
+                description = "Learn about human organ systems",
                 icon = Icons.Default.Favorite,
                 color = CrimsonRed,
-                totalQuestions = 5,
-                questions = getOrganSystemQuestions()
+                totalQuestions = 0,
+                questions = emptyList()
             ),
             QuizModuleData(
                 id = "simple_machines",
                 name = "Simple Machines",
-                description = "Explore the six types of simple machines and how they make work easier",
+                description = "Explore simple machines",
                 icon = Icons.Default.Settings,
                 color = AmberAlert,
-                totalQuestions = 5,
-                questions = getSimpleMachineQuestions()
+                totalQuestions = 0,
+                questions = emptyList()
             ),
             QuizModuleData(
                 id = "solar_system",
                 name = "Solar System",
-                description = "Journey through our solar system and learn about planets and space",
+                description = "Journey through space",
                 icon = Icons.Default.Brightness7,
                 color = PurpleHaze,
-                totalQuestions = 5,
-                questions = getSolarSystemQuestions()
+                totalQuestions = 0,
+                questions = emptyList()
             )
         )
     }
     
-    if (selectedModule == null) {
-        // Module Selection Screen
-        ModuleSelectionScreen(
-            modules = modules,
-            onModuleSelected = { 
-                selectedModule = it
+    // Auto-select module when moduleId is provided
+    LaunchedEffect(moduleId) {
+        android.util.Log.d("QuizScreen", "LaunchedEffect triggered with moduleId: '$moduleId'")
+        
+        if (moduleId.isNotEmpty() && selectedModule == null) {
+            android.util.Log.d("QuizScreen", "Auto-selecting module with ID: $moduleId")
+            val module = modules.find { it.id == moduleId }
+            if (module != null) {
+                android.util.Log.d("QuizScreen", "Found module: ${module.name}")
+                selectedModule = module
                 currentQuestionIndex = 0
                 selectedAnswers = emptyList()
                 showResults = false
                 score = 0
-            },
-            onNavigateBack = onNavigateBack
-        )
-    } else if (!showResults) {
-        // Quiz Screen
-        QuizQuestionScreen(
-            module = selectedModule!!,
-            currentQuestionIndex = currentQuestionIndex,
-            selectedAnswers = selectedAnswers,
-            onAnswerSelected = { questionIndex, answerIndex ->
-                selectedAnswers = selectedAnswers.toMutableList().apply {
-                    while (size <= questionIndex) add(-1)
-                    set(questionIndex, answerIndex)
+                loadError = null
+            } else {
+                android.util.Log.e("QuizScreen", "Module not found with id: '$moduleId'")
+            }
+        }
+    }
+    
+    // Load questions when a module is selected
+    LaunchedEffect(selectedModule?.id) {
+        selectedModule?.let { module ->
+            android.util.Log.d("QuizScreen", "Loading questions for module: ${module.id}")
+            
+            if (module.questions.isEmpty()) {
+                android.util.Log.d("QuizScreen", "Questions empty, loading from database...")
+                isLoadingQuestions = true
+                loadError = null
+                
+                val result = quizViewModel.getQuizQuestionsByModule(module.id)
+                android.util.Log.d("QuizScreen", "Result received: ${if (result.isSuccess) "SUCCESS" else "FAILURE"}")
+                
+                result.onSuccess { questions ->
+                    android.util.Log.d("QuizScreen", "✅ Loaded ${questions.size} questions")
+                    if (questions.isNotEmpty()) {
+                        selectedModule = module.copy(
+                            questions = questions,
+                            totalQuestions = questions.size
+                        )
+                        android.util.Log.d("QuizScreen", "Module updated with ${questions.size} questions")
+                    } else {
+                        android.util.Log.e("QuizScreen", "No questions returned from database")
+                        loadError = "No questions available for this module yet"
+                    }
+                    isLoadingQuestions = false
+                }.onFailure { error ->
+                    android.util.Log.e("QuizScreen", "❌ Failed to load questions: ${error.message}", error)
+                    loadError = error.message ?: "Failed to load questions"
+                    isLoadingQuestions = false
                 }
-            },
-            onNext = {
-                if (currentQuestionIndex < selectedModule!!.questions.size - 1) {
-                    currentQuestionIndex++
-                } else {
-                    // Calculate score
-                    score = selectedAnswers.mapIndexed { index, answer ->
-                        if (index < selectedModule!!.questions.size && 
-                            answer == selectedModule!!.questions[index].correctAnswer) 1 else 0
-                    }.sum()
-                    
-                    // Save quiz progress when quiz is completed
-                    val percentage = (score.toFloat() / selectedModule!!.questions.size.toFloat()) * 100f
-                    quizViewModel.completeModule(
-                        moduleId = selectedModule!!.id,
-                        score = percentage,
-                        questionsAnswered = score,
-                        totalQuestions = selectedModule!!.questions.size
-                    )
-                    
-                    showResults = true
+            } else {
+                android.util.Log.d("QuizScreen", "Module already has ${module.questions.size} questions")
+            }
+        }
+    }
+    
+    // UI Logic
+    when {
+        selectedModule == null -> {
+            // Module Selection Screen
+            ModuleSelectionScreen(
+                modules = modules,
+                onModuleSelected = { 
+                    android.util.Log.d("QuizScreen", "Module selected: ${it.id}")
+                    selectedModule = it
+                    currentQuestionIndex = 0
+                    selectedAnswers = emptyList()
+                    showResults = false
+                    score = 0
+                    loadError = null
+                },
+                onNavigateBack = onNavigateBack
+            )
+        }
+        isLoadingQuestions -> {
+            // Loading State
+            LoadingScreen(moduleColor = selectedModule!!.color)
+        }
+        loadError != null || selectedModule!!.questions.isEmpty() -> {
+            // Error State
+            ErrorScreen(
+                module = selectedModule!!,
+                error = loadError,
+                onBack = { 
+                    selectedModule = null
+                    loadError = null
                 }
-            },
-            onPrevious = {
-                if (currentQuestionIndex > 0) {
-                    currentQuestionIndex--
-                }
-            },
-            onBack = { selectedModule = null }
-        )
-    } else {
-        // Results Screen
-        QuizResultsScreen(
-            module = selectedModule!!,
-            score = score,
-            totalQuestions = selectedModule!!.questions.size,
-            quizViewModel = quizViewModel,
-            onRetry = {
-                currentQuestionIndex = 0
-                selectedAnswers = emptyList()
-                showResults = false
-                score = 0
-            },
-            onBackToModules = { selectedModule = null }
-        )
+            )
+        }
+        !showResults -> {
+            // Quiz Screen
+            QuizQuestionScreen(
+                module = selectedModule!!,
+                questions = selectedModule!!.questions,
+                currentQuestionIndex = currentQuestionIndex,
+                selectedAnswers = selectedAnswers,
+                onAnswerSelected = { questionIndex, answerIndex ->
+                    selectedAnswers = selectedAnswers.toMutableList().apply {
+                        while (size <= questionIndex) add(-1)
+                        set(questionIndex, answerIndex)
+                    }
+                },
+                onNextQuestion = {
+                    if (currentQuestionIndex < selectedModule!!.questions.size - 1) {
+                        currentQuestionIndex++
+                    } else {
+                        // Calculate score
+                        score = selectedAnswers.mapIndexed { index, answer ->
+                            if (index < selectedModule!!.questions.size) {
+                                val correctAnswerIndex = when(selectedModule!!.questions[index].correctAnswer) {
+                                    "A" -> 0
+                                    "B" -> 1
+                                    "C" -> 2
+                                    "D" -> 3
+                                    else -> -1
+                                }
+                                if (answer == correctAnswerIndex) 1 else 0
+                            } else 0
+                        }.sum()
+                        
+                        // Save quiz progress
+                        val percentage = (score.toFloat() / selectedModule!!.questions.size.toFloat()) * 100f
+                        quizViewModel.completeModule(
+                            moduleId = selectedModule!!.id,
+                            score = percentage,
+                            questionsAnswered = score,
+                            totalQuestions = selectedModule!!.questions.size
+                        )
+                        
+                        showResults = true
+                    }
+                },
+                onPreviousQuestion = {
+                    if (currentQuestionIndex > 0) {
+                        currentQuestionIndex--
+                    }
+                },
+                onSubmitQuiz = {},
+                onNavigateBack = { selectedModule = null }
+            )
+        }
+        else -> {
+            // Results Screen
+            QuizResultsScreen(
+                module = selectedModule!!,
+                score = score,
+                totalQuestions = selectedModule!!.questions.size,
+                quizViewModel = quizViewModel,
+                onRetry = {
+                    currentQuestionIndex = 0
+                    selectedAnswers = emptyList()
+                    showResults = false
+                    score = 0
+                },
+                onNavigateBackToModules = { selectedModule = null }
+            )
+        }
+    }
+}
+
+@Composable
+private fun LoadingScreen(moduleColor: androidx.compose.ui.graphics.Color) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(DeepSpace),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            CircularProgressIndicator(color = moduleColor)
+            Text(
+                text = "Loading questions...",
+                style = MaterialTheme.typography.bodyLarge,
+                color = WhiteSmoke
+            )
+        }
+    }
+}
+
+@Composable
+private fun ErrorScreen(
+    module: QuizModuleData,
+    error: String?,
+    onBack: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(DeepSpace),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(32.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Error,
+                contentDescription = "Error",
+                tint = CrimsonRed,
+                modifier = Modifier.size(64.dp)
+            )
+            Text(
+                text = error ?: "No questions available",
+                style = MaterialTheme.typography.bodyLarge,
+                color = WhiteSmoke,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+            Text(
+                text = "Module: ${module.name}\nID: ${module.id}\nQuestions: ${module.questions.size}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MetallicSilver,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+            Button(
+                onClick = onBack,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = module.color
+                )
+            ) {
+                Text("Back to Modules")
+            }
+        }
     }
 }
 
@@ -320,7 +484,11 @@ private fun ModuleCard(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "${module.totalQuestions} Questions",
+                        text = if (module.totalQuestions > 0) {
+                            "${module.totalQuestions} Questions"
+                        } else {
+                            "Loading..."
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = module.color
                     )
@@ -336,9 +504,6 @@ private fun ModuleCard(
     }
 }
 
-// Data classes and question functions would continue...
-// Due to length constraints, I'll create the remaining functions in separate files
-
 data class QuizModuleData(
     val id: String,
     val name: String,
@@ -346,12 +511,5 @@ data class QuizModuleData(
     val icon: ImageVector,
     val color: androidx.compose.ui.graphics.Color,
     val totalQuestions: Int,
-    val questions: List<QuizQuestion>
-)
-
-data class QuizQuestion(
-    val question: String,
-    val options: List<String>,
-    val correctAnswer: Int,
-    val explanation: String
+    val questions: List<com.example.escape_ar.data.model.QuizQuestion>
 )

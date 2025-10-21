@@ -65,28 +65,6 @@ data class VideoProgress(
 )
 
 /**
- * User settings model matching Supabase user_settings table
- */
-@Serializable
-data class UserSettings(
-    @SerialName("id") val id: String? = null,
-    @SerialName("user_id") val userId: String,
-    @SerialName("music_volume") val musicVolume: Float = 0.7f,
-    @SerialName("sfx_volume") val sfxVolume: Float = 0.7f,
-    @SerialName("captions_enabled") val captionsEnabled: Boolean = true,
-    @SerialName("updated_at") val updatedAt: String? = null
-) {
-    companion object {
-        val DEFAULT = UserSettings(
-            userId = "",
-            musicVolume = 0.7f,
-            sfxVolume = 0.7f,
-            captionsEnabled = true
-        )
-    }
-}
-
-/**
  * Request model for updating user profile
  */
 @Serializable
@@ -94,14 +72,4 @@ data class UpdateProfileRequest(
     @SerialName("display_name") val displayName: String,
     @SerialName("teacher_name") val teacherName: String? = null,
     @SerialName("section") val section: String? = null
-)
-
-/**
- * Request model for updating user settings
- */
-@Serializable
-data class UpdateSettingsRequest(
-    @SerialName("music_volume") val musicVolume: Float,
-    @SerialName("sfx_volume") val sfxVolume: Float,
-    @SerialName("captions_enabled") val captionsEnabled: Boolean
 )
