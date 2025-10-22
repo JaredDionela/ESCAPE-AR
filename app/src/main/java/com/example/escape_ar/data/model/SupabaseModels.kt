@@ -7,6 +7,11 @@ import kotlinx.serialization.Serializable
  * Extended user profile data model for the new features (video lessons, settings, etc.)
  * This extends the basic UserProfile with teacher and section information
  * MUST match all columns in the Supabase profiles table
+ * 
+ * NEW SCHEMA: Uses teacher_id (foreign key) instead of teacher_name (text)
+ * - role: 'student' or 'teacher'
+ * - teacher_id: UUID foreign key to profiles table (for students)
+ * - teacher_name: Deprecated (kept for backwards compatibility)
  */
 @Serializable
 data class ExtendedUserProfile(
@@ -14,7 +19,9 @@ data class ExtendedUserProfile(
     @SerialName("email") val email: String? = null,
     @SerialName("full_name") val fullName: String? = null,
     @SerialName("display_name") val displayName: String,
-    @SerialName("teacher_name") val teacherName: String? = null,
+    @SerialName("role") val role: String? = null, // 'student' or 'teacher'
+    @SerialName("teacher_id") val teacherId: String? = null, // UUID - foreign key to teacher's profile
+    @SerialName("teacher_name") val teacherName: String? = null, // Deprecated - use teacher_id + JOIN instead
     @SerialName("section") val section: String? = null,
     @SerialName("avatar_url") val avatarUrl: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
@@ -66,10 +73,34 @@ data class VideoProgress(
 
 /**
  * Request model for updating user profile
+ * NEW SCHEMA: Uses teacher_id instead of teacher_name
  */
 @Serializable
 data class UpdateProfileRequest(
     @SerialName("display_name") val displayName: String,
-    @SerialName("teacher_name") val teacherName: String? = null,
+    @SerialName("teacher_id") val teacherId: String? = null, // UUID of selected teacher
     @SerialName("section") val section: String? = null
+)
+
+/**
+ * Profile with teacher info (from JOIN query)
+ * Used to display student's profile with their teacher's name
+ */
+@Serializable
+data class ProfileWithTeacher(
+    @SerialName("id") val id: String,
+    @SerialName("email") val email: String? = null,
+    @SerialName("display_name") val displayName: String,
+    @SerialName("role") val role: String? = null,
+    @SerialName("teacher_id") val teacherId: String? = null,
+    @SerialName("section") val section: String? = null,
+    @SerialName("teacher") val teacher: TeacherInfo? = null // Nested teacher object from JOIN
+)
+
+/**
+ * Teacher information from JOIN query
+ */
+@Serializable
+data class TeacherInfo(
+    @SerialName("display_name") val displayName: String
 )

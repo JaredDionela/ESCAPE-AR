@@ -147,6 +147,7 @@ export function Analytics() {
       const activeUsers = activeUserIds.size;
 
       // Get top performers using progress table (best scores)
+      // Show ALL quiz attempts, not just completed (70%+) ones
       const { data: topPerformersData, error: performersError } = await supabase
         .from('progress')
         .select(`
@@ -155,7 +156,6 @@ export function Analytics() {
           completed,
           profiles!inner(display_name)
         `)
-        .eq('completed', true)
         .order('best_score', { ascending: false });
       
       if (performersError) {

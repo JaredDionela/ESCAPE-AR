@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -104,7 +105,7 @@ fun StudentMainScreen(
                 description = "Learn how to separate mixtures by carefully pouring off liquids.",
                 storylineContext = "Understand decantation techniques used in chemistry to separate solid-liquid mixtures.",
                 icon = Icons.Default.Science,
-                color = NeonCyan,
+                color = MistyBlue,
                 estimatedTime = "15-20 min",
                 difficulty = "Beginner"
             ),
@@ -144,20 +145,12 @@ fun StudentMainScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        DeepSpace,
-                        DarkGrey.copy(alpha = 0.3f),
-                        DeepSpace
-                    )
-                )
-            )
+            .background(CharcoalBlue) // Solid dark background
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Top App Bar with Mission Status
+            // Top App Bar - Consistent Dark Theme
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -176,13 +169,13 @@ fun StudentMainScreen(
                         Text(
                             text = "Welcome, ${userNameState.value}",
                             style = MaterialTheme.typography.headlineSmall,
-                            color = NeonCyan,
+                            color = MistyBlue,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
                             text = "E.S.C.A.P.E. AR Learning Platform",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MetallicSilver
+                            color = CoolGray
                         )
                     }
                     
@@ -194,21 +187,21 @@ fun StudentMainScreen(
                             Icon(
                                 Icons.Default.Person,
                                 contentDescription = "Profile",
-                                tint = MetallicSilver
+                                tint = CoolGray
                             )
                         }
                         IconButton(onClick = onLogout) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ExitToApp,
                                 contentDescription = "Logout",
-                                tint = CrimsonRed
+                                tint = CoralRed
                             )
                         }
                     }
                 }
             }
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
             
             // Main Content
             LazyColumn(
@@ -218,153 +211,261 @@ fun StudentMainScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
 
-                // AR Experience Card with Description
+                // AR Experience Card - Modern Blue-Mint Design
                 item {
                     Card(
                         colors = CardDefaults.cardColors(
-                            containerColor = PurpleHaze.copy(alpha = 0.2f)
+                            containerColor = DeepSlate // Unified dark card base
                         ),
+                        shape = RoundedCornerShape(20.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(20.dp)) {
+                        Column(modifier = Modifier.padding(24.dp)) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    Icons.Default.ViewInAr,
-                                    contentDescription = null,
-                                    tint = PurpleHaze,
-                                    modifier = Modifier.size(32.dp)
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
+                                // Icon with glow effect
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .background(
+                                            Brush.radialGradient(
+                                                colors = listOf(
+                                                    MistyBlue.copy(alpha = 0.3f),
+                                                    Color.Transparent
+                                                )
+                                            ),
+                                            shape = CircleShape
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        Icons.Default.ViewInAr,
+                                        contentDescription = null,
+                                        tint = MistyBlue,
+                                        modifier = Modifier.size(28.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(16.dp))
                                 Text(
                                     text = "AR Experience",
                                     style = MaterialTheme.typography.titleLarge,
-                                    color = WhiteSmoke,
-                                    fontWeight = FontWeight.Bold
+                                    color = OffWhite,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 22.sp
                                 )
                             }
-                            
-                            Spacer(modifier = Modifier.height(12.dp))
-                            
-                            Text(
-                                text = "Learn science through Augmented Reality with Kylon, your interactive science guide. Experience immersive 3D visualizations of scientific concepts!",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MetallicSilver,
-                                lineHeight = 20.sp
-                            )
-                            
-                            Spacer(modifier = Modifier.height(16.dp))
-                            
-                            Button(
-                                onClick = onUnityLaunch,
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = PurpleHaze,
-                                    contentColor = WhiteSmoke
-                                )
-                            ) {
-                                Icon(
-                                    Icons.Default.PlayArrow,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
+                                
+                                Spacer(modifier = Modifier.height(16.dp))
+                                
                                 Text(
-                                    text = "Start AR Learning",
-                                    fontWeight = FontWeight.Bold
+                                    text = "Learn science through Augmented Reality with Kylon, your interactive science guide. Experience immersive 3D visualizations of scientific concepts!",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = CoolGray,
+                                    lineHeight = 22.sp
                                 )
+                                
+                                Spacer(modifier = Modifier.height(20.dp))
+                                
+                                // Gradient button with glow
+                                Button(
+                                    onClick = onUnityLaunch,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(56.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color.Transparent
+                                    ),
+                                    contentPadding = PaddingValues(0.dp),
+                                    shape = RoundedCornerShape(16.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .background(
+                                                Brush.linearGradient(
+                                                    colors = listOf(
+                                                        MistyBlue,
+                                                        MistyBlueLight
+                                                    )
+                                                )
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center
+                                        ) {
+                                            Icon(
+                                                Icons.Default.PlayArrow,
+                                                contentDescription = null,
+                                                tint = OffWhite,
+                                                modifier = Modifier.size(24.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Text(
+                                                text = "Start AR Learning",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 16.sp,
+                                                color = OffWhite
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
-                }
                 
-                // Video Lessons Card
+                // Video Lessons Card - Modern Blue-Mint Design
                 item {
                     Card(
                         colors = CardDefaults.cardColors(
-                            containerColor = AmberAlert.copy(alpha = 0.2f)
+                            containerColor = DeepSlate // Unified dark card base
                         ),
+                        shape = RoundedCornerShape(20.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(20.dp)) {
+                        Column(modifier = Modifier.padding(24.dp)) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    Icons.Default.PlayCircle,
-                                    contentDescription = null,
-                                    tint = AmberAlert,
-                                    modifier = Modifier.size(32.dp)
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
+                                // Icon with glow effect
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .background(
+                                            Brush.radialGradient(
+                                                colors = listOf(
+                                                    ElectricMint.copy(alpha = 0.3f),
+                                                    Color.Transparent
+                                                )
+                                            ),
+                                            shape = CircleShape
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        Icons.Default.PlayCircle,
+                                        contentDescription = null,
+                                        tint = ElectricMint,
+                                        modifier = Modifier.size(28.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(16.dp))
                                 Text(
                                     text = "Video Lessons",
                                     style = MaterialTheme.typography.titleLarge,
-                                    color = WhiteSmoke,
-                                    fontWeight = FontWeight.Bold
+                                    color = OffWhite,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 22.sp
                                 )
                             }
                             
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
                             
                             Text(
                                 text = "Watch engaging video tutorials and download learning materials. Each module includes YouTube lessons and downloadable files to help you master the concepts.",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MetallicSilver,
-                                lineHeight = 20.sp
+                                color = CoolGray,
+                                lineHeight = 22.sp
                             )
                             
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(20.dp))
                             
-                            // Module buttons in 2x2 grid
+                            // Module buttons in 2x2 grid - All using MistyBlue
                             Column(
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     OutlinedButton(
                                         onClick = { onLessonsClick("decantation", "Decantation") },
-                                        modifier = Modifier.weight(1f),
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(48.dp),
                                         colors = ButtonDefaults.outlinedButtonColors(
-                                            contentColor = NeonCyan
-                                        )
+                                            contentColor = MistyBlue
+                                        ),
+                                        border = androidx.compose.foundation.BorderStroke(
+                                            2.dp,
+                                            MistyBlue.copy(alpha = 0.5f)
+                                        ),
+                                        shape = RoundedCornerShape(12.dp)
                                     ) {
-                                        Text("Decantation", fontSize = 12.sp)
+                                        Text(
+                                            "Decantation",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
                                     }
                                     OutlinedButton(
                                         onClick = { onLessonsClick("organ_system", "Organ Systems") },
-                                        modifier = Modifier.weight(1f),
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(48.dp),
                                         colors = ButtonDefaults.outlinedButtonColors(
-                                            contentColor = CrimsonRed
-                                        )
+                                            contentColor = MistyBlue
+                                        ),
+                                        border = androidx.compose.foundation.BorderStroke(
+                                            2.dp,
+                                            MistyBlue.copy(alpha = 0.5f)
+                                        ),
+                                        shape = RoundedCornerShape(12.dp)
                                     ) {
-                                        Text("Organs", fontSize = 12.sp)
+                                        Text(
+                                            "Organs",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
                                     }
                                 }
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     OutlinedButton(
                                         onClick = { onLessonsClick("simple_machines", "Simple Machines") },
-                                        modifier = Modifier.weight(1f),
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(48.dp),
                                         colors = ButtonDefaults.outlinedButtonColors(
-                                            contentColor = AmberAlert
-                                        )
+                                            contentColor = MistyBlue
+                                        ),
+                                        border = androidx.compose.foundation.BorderStroke(
+                                            2.dp,
+                                            MistyBlue.copy(alpha = 0.5f)
+                                        ),
+                                        shape = RoundedCornerShape(12.dp)
                                     ) {
-                                        Text("Machines", fontSize = 12.sp)
+                                        Text(
+                                            "Machines",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
                                     }
                                     OutlinedButton(
                                         onClick = { onLessonsClick("solar_system", "Solar System") },
-                                        modifier = Modifier.weight(1f),
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(48.dp),
                                         colors = ButtonDefaults.outlinedButtonColors(
-                                            contentColor = PurpleHaze
-                                        )
+                                            contentColor = MistyBlue
+                                        ),
+                                        border = androidx.compose.foundation.BorderStroke(
+                                            2.dp,
+                                            MistyBlue.copy(alpha = 0.5f)
+                                        ),
+                                        shape = RoundedCornerShape(12.dp)
                                     ) {
-                                        Text("Solar", fontSize = 12.sp)
+                                        Text(
+                                            "Solar",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
                                     }
                                 }
                             }
@@ -372,65 +473,115 @@ fun StudentMainScreen(
                     }
                 }
                 
-                // Science Modules Card
+                // Science Quizzes Card - Modern Blue-Mint Design
                 item {
                     Card(
                         colors = CardDefaults.cardColors(
-                            containerColor = NeonCyan.copy(alpha = 0.2f)
+                            containerColor = DeepSlate // Unified dark card base
                         ),
+                        shape = RoundedCornerShape(20.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(20.dp)) {
+                        Column(modifier = Modifier.padding(24.dp)) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    Icons.Default.School,
-                                    contentDescription = null,
-                                    tint = NeonCyan,
-                                    modifier = Modifier.size(32.dp)
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
+                                // Icon with glow
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .background(
+                                            Brush.radialGradient(
+                                                colors = listOf(
+                                                    MistyBlue.copy(alpha = 0.3f),
+                                                    Color.Transparent
+                                                )
+                                            ),
+                                            shape = CircleShape
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        Icons.Default.School,
+                                        contentDescription = null,
+                                        tint = MistyBlue,
+                                        modifier = Modifier.size(28.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(16.dp))
                                 Text(
                                     text = "Science Quizzes",
                                     style = MaterialTheme.typography.titleLarge,
-                                    color = WhiteSmoke,
-                                    fontWeight = FontWeight.Bold
+                                    color = OffWhite,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 22.sp
                                 )
                             }
-                            
-                            Spacer(modifier = Modifier.height(12.dp))
-                            
-                            Text(
-                                text = "Test your knowledge with interactive quizzes on 4 science topics: Decantation, Organ Systems, Simple Machines, and Solar System.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MetallicSilver,
-                                lineHeight = 20.sp
-                            )
-                            
-                            Spacer(modifier = Modifier.height(16.dp))
-                            
-                            Button(
-                                onClick = { onQuizClick("") },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = NeonCyan,
-                                    contentColor = DeepSpace
-                                )
-                            ) {
-                                Icon(
-                                    Icons.Default.Quiz,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
+                                
+                                Spacer(modifier = Modifier.height(16.dp))
+                                
                                 Text(
-                                    text = "View Modules",
-                                    fontWeight = FontWeight.Bold
+                                    text = "Test your knowledge with interactive quizzes on 4 science topics: Decantation, Organ Systems, Simple Machines, and Solar System.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = CoolGray,
+                                    lineHeight = 22.sp
                                 )
-                            }
+                                
+                                Spacer(modifier = Modifier.height(20.dp))
+                                
+                                // Mint gradient button with glow
+                                Button(
+                                    onClick = { onQuizClick("") },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(56.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color.Transparent
+                                    ),
+                                    contentPadding = PaddingValues(0.dp),
+                                    shape = RoundedCornerShape(16.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .background(
+                                                Brush.linearGradient(
+                                                    colors = listOf(
+                                                        MistyBlue,
+                                                        MistyBlueLight
+                                                    )
+                                                )
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Quiz,
+                                                contentDescription = null,
+                                                tint = OffWhite,
+                                                modifier = Modifier.size(24.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Text(
+                                                text = "View Modules",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 16.sp,
+                                                color = OffWhite
+                                            )
+                                        }
+                                    }
+                                }
                         }
                     }
+                }
+                
+                // Bottom spacing
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
         }
@@ -501,14 +652,14 @@ fun MissionBriefTab(
                         Icon(
                             Icons.Default.Science,
                             contentDescription = null,
-                            tint = NeonCyan,
+                            tint = MistyBlue,
                             modifier = Modifier.size(28.dp)
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
                             text = "Mission Briefing",
                             style = MaterialTheme.typography.headlineSmall,
-                            color = NeonCyan,
+                            color = MistyBlue,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -561,7 +712,7 @@ fun MissionBriefTab(
                         ) {
                             Text(
                                 text = if (isFullStoryMode) "Brief Summary" else "Full Briefing",
-                                color = NeonCyan
+                                color = MistyBlue
                             )
                         }
                         
@@ -627,7 +778,7 @@ fun TrainingModulesTab(
                         Text(
                             text = "${(learningProgress * 100).toInt()}%",
                             style = MaterialTheme.typography.titleLarge,
-                            color = NeonCyan,
+                            color = MistyBlue,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -638,7 +789,7 @@ fun TrainingModulesTab(
                             .fillMaxWidth()
                             .height(8.dp)
                             .clip(RoundedCornerShape(4.dp)),
-                        color = NeonCyan,
+                        color = MistyBlue,
                         trackColor = DarkGrey
                     )
                 }
@@ -721,7 +872,7 @@ fun TrainingModulesTab(
                             Icon(
                                 Icons.Default.CheckCircle,
                                 contentDescription = "Completed",
-                                tint = NeonCyan,
+                                tint = MistyBlue,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -753,7 +904,7 @@ fun TrainingModulesTab(
                             text = module.difficulty,
                             style = MaterialTheme.typography.bodySmall,
                             color = when (module.difficulty) {
-                                "Beginner" -> NeonCyan
+                                "Beginner" -> MistyBlue
                                 "Intermediate" -> AmberAlert
                                 "Advanced" -> CrimsonRed
                                 else -> MetallicSilver

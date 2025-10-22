@@ -53,15 +53,17 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                 _currentUser.value = user
                 Log.d("ProfileViewModel", "Loaded user: ${user.fullName} (${user.email})")
                 
-                // Load extended profile (teacher name, section)
+                // Load extended profile (teacher name, teacher ID, section)
                 var teacherName: String? = null
+                var teacherId: String? = null
                 var section: String? = null
                 try {
                     val extendedProfileResult = userRepository.getExtendedUserProfile(user.id)
                     extendedProfileResult.onSuccess { profile ->
                         teacherName = profile.teacherName
+                        teacherId = profile.teacherId
                         section = profile.section
-                        Log.d("ProfileViewModel", "Loaded extended profile: teacher=${profile.teacherName}, section=${profile.section}")
+                        Log.d("ProfileViewModel", "Loaded extended profile: teacher=${profile.teacherName} (ID: ${profile.teacherId}), section=${profile.section}")
                     }.onFailure { e ->
                         Log.w("ProfileViewModel", "Could not load extended profile: ${e.message}")
                     }
@@ -85,6 +87,7 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                     userName = user.fullName,
                     userEmail = user.email,
                     teacherName = teacherName,
+                    teacherId = teacherId,
                     section = section,
                     modules = modulesWithProgress.map { module ->
                         // Score is stored as percentage (0-100) in database
@@ -147,6 +150,7 @@ data class ProfileUiState(
     val userName: String = "Loading...",
     val userEmail: String = "Loading...",
     val teacherName: String? = null,
+    val teacherId: String? = null,  // Added teacherId for edit dialog
     val section: String? = null,
     val modules: List<ModuleProgress> = emptyList()
 )

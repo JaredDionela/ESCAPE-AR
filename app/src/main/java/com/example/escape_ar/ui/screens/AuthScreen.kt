@@ -1,5 +1,6 @@
 package com.example.escape_ar.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -12,6 +13,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -19,9 +23,11 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.escape_ar.R
 import com.example.escape_ar.ui.theme.*
 import kotlinx.coroutines.launch
 import com.example.escape_ar.data.repository.UserRepository
+import com.example.escape_ar.data.repository.Teacher
 // import com.example.escape_ar.viewmodel.AuthViewModel // Temporarily disabled
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,16 +40,40 @@ fun AuthScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var fullName by remember { mutableStateOf("") }
-    var teacherName by remember { mutableStateOf("") }
     var section by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     
+    // Teacher selection state
+    var availableTeachers by remember { mutableStateOf<List<Teacher>>(emptyList()) }
+    var selectedTeacher by remember { mutableStateOf<Teacher?>(null) }
+    var teachersLoading by remember { mutableStateOf(false) }
+    var teachersExpanded by remember { mutableStateOf(false) }
+    
     // Get context and create repository with proper context
     val context = androidx.compose.ui.platform.LocalContext.current
     val repo = remember { UserRepository(context) }
+    
+    // Fetch teachers when switching to signup mode
+    LaunchedEffect(isLoginMode) {
+        if (!isLoginMode && availableTeachers.isEmpty()) {
+            teachersLoading = true
+            repo.getAvailableTeachers().fold(
+                onSuccess = { teachers ->
+                    availableTeachers = teachers
+                    teachersLoading = false
+                    android.util.Log.d("AuthScreen", "Loaded ${teachers.size} teachers")
+                },
+                onFailure = { error ->
+                    errorMessage = "Failed to load teachers: ${error.message}"
+                    teachersLoading = false
+                    android.util.Log.e("AuthScreen", "Error loading teachers", error)
+                }
+            )
+        }
+    }
     
     Box(
         modifier = Modifier
@@ -51,9 +81,9 @@ fun AuthScreen(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        DeepSpace,
-                        DarkGrey.copy(alpha = 0.5f),
-                        DeepSpace
+                        SoftPurple,        // Soft Purple (unified brand color)
+                        BrandIndigo,       // Indigo
+                        DarkNavy           // Dark Navy
                     )
                 )
             )
@@ -80,21 +110,14 @@ fun AuthScreen(
                         .padding(32.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(
-                        Icons.Default.Science,
-                        contentDescription = null,
-                        tint = NeonCyan,
-                        modifier = Modifier.size(64.dp)
-                    )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    Text(
-                        text = "E.S.C.A.P.E. AR",
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = NeonCyan,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
+                    // Logo Image - BIGGER SIZE (33% larger)
+                    Image(
+                        painter = painterResource(id = R.drawable.logo),
+                        contentDescription = "E.S.C.A.P.E. AR Logo",
+                        modifier = Modifier
+                            .size(240.dp)  // Increased from 180dp to 240dp
+                            .padding(16.dp),
+                        contentScale = ContentScale.Fit
                     )
                     
                     Spacer(modifier = Modifier.height(8.dp))
@@ -167,21 +190,79 @@ fun AuthScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         
-                        // Teacher Name field
-                        OutlinedTextField(
-                            value = teacherName,
-                            onValueChange = { teacherName = it },
-                            label = { Text("Teacher Name (Required)") },
-                            leadingIcon = {
-                                Icon(Icons.Default.School, contentDescription = null)
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = NeonCyan,
-                                focusedLabelColor = NeonCyan,
-                                focusedLeadingIconColor = NeonCyan
+                        // Teacher Selection Dropdown
+                        ExposedDropdownMenuBox(
+                            expanded = teachersExpanded,
+                            onExpandedChange = { teachersExpanded = !teachersExpanded }
+                        ) {
+                            OutlinedTextField(
+                                value = selectedTeacher?.displayName ?: "",
+                                onValueChange = { },
+                                readOnly = true,
+                                label = { Text("Select Your Teacher (Required)") },
+                                leadingIcon = {
+                                    Icon(Icons.Default.School, contentDescription = null)
+                                },
+                                trailingIcon = {
+                                    if (teachersLoading) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(24.dp),
+                                            color = NeonCyan,
+                                            strokeWidth = 2.dp
+                                        )
+                                    } else {
+                                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = teachersExpanded)
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .menuAnchor(),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = NeonCyan,
+                                    focusedLabelColor = NeonCyan,
+                                    focusedLeadingIconColor = NeonCyan,
+                                    unfocusedBorderColor = ElectricBlue,
+                                    unfocusedLabelColor = ElectricBlue
+                                )
                             )
-                        )
+                            
+                            ExposedDropdownMenu(
+                                expanded = teachersExpanded,
+                                onDismissRequest = { teachersExpanded = false },
+                                modifier = Modifier.background(CharcoalGrey)
+                            ) {
+                                if (availableTeachers.isEmpty() && !teachersLoading) {
+                                    DropdownMenuItem(
+                                        text = { Text("No teachers available", color = WhiteSmoke) },
+                                        onClick = { }
+                                    )
+                                } else {
+                                    availableTeachers.forEach { teacher ->
+                                        DropdownMenuItem(
+                                            text = {
+                                                Column {
+                                                    Text(
+                                                        teacher.displayName,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = WhiteSmoke
+                                                    )
+                                                    Text(
+                                                        teacher.email,
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = WhiteSmoke.copy(alpha = 0.7f)
+                                                    )
+                                                }
+                                            },
+                                            onClick = {
+                                                selectedTeacher = teacher
+                                                teachersExpanded = false
+                                                android.util.Log.d("AuthScreen", "Selected teacher: ${teacher.displayName} (${teacher.id})")
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
                         Spacer(modifier = Modifier.height(16.dp))
                         
                         // Section field
@@ -276,8 +357,8 @@ fun AuthScreen(
                             
                             // Validate signup fields
                             if (!isLoginMode) {
-                                if (teacherName.trim().isEmpty()) {
-                                    errorMessage = "Teacher name is required"
+                                if (selectedTeacher == null) {
+                                    errorMessage = "Please select a teacher"
                                     return@Button
                                 }
                                 if (section.trim().isEmpty()) {
@@ -294,12 +375,12 @@ fun AuthScreen(
                                         android.util.Log.d("AuthScreen", "Attempting sign in for: $email")
                                         repo.signIn(email.trim(), password)
                                     } else {
-                                        android.util.Log.d("AuthScreen", "Attempting sign up for: $email with teacher: '$teacherName', section: '$section'")
+                                        android.util.Log.d("AuthScreen", "Attempting sign up for: $email with teacher: '${selectedTeacher?.displayName}' (${selectedTeacher?.id}), section: '$section'")
                                         repo.signUp(
                                             email = email.trim(), 
                                             password = password, 
                                             fullName = fullName.trim(),
-                                            teacherName = teacherName.trim(),
+                                            teacherId = selectedTeacher?.id,
                                             section = section.trim()
                                         )
                                     }
@@ -324,7 +405,7 @@ fun AuthScreen(
                             contentColor = if (isLoginMode) DeepSpace else WhiteSmoke
                         ),
                         enabled = email.isNotEmpty() && password.isNotEmpty() &&
-                                  (isLoginMode || (fullName.isNotEmpty() && teacherName.isNotEmpty() && section.isNotEmpty()))
+                                  (isLoginMode || (fullName.isNotEmpty() && selectedTeacher != null && section.isNotEmpty()))
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically

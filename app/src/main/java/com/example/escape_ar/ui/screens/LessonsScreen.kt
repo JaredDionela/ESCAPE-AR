@@ -107,7 +107,7 @@ fun LessonsScreen(
                         Icon(
                             Icons.Default.ArrowBack,
                             contentDescription = "Back",
-                            tint = NeonCyan
+                            tint = MistyBlue
                         )
                     }
                 },
@@ -123,7 +123,7 @@ fun LessonsScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator(color = NeonCyan)
+                        CircularProgressIndicator(color = MistyBlue)
                     }
                 }
                 errorMessage != null -> {
@@ -197,25 +197,59 @@ fun LessonsScreen(
                             )
                         }
 
-                        // Placeholder info card
+                        // Info card about YouTube playback
                         item {
                             Card(
                                 colors = CardDefaults.cardColors(
-                                    containerColor = PurpleHaze.copy(alpha = 0.2f)
+                                    containerColor = DeepSlate
                                 ),
+                                shape = RoundedCornerShape(16.dp),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(16.dp),
+                                    modifier = Modifier.padding(20.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(
-                                        Icons.Default.Info,
-                                        contentDescription = null,
-                                        tint = PurpleHaze,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-
+                                    Box(
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .background(
+                                                Brush.radialGradient(
+                                                    colors = listOf(
+                                                        MistyBlue.copy(alpha = 0.3f),
+                                                        Color.Transparent
+                                                    )
+                                                ),
+                                                shape = CircleShape
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Info,
+                                            contentDescription = null,
+                                            tint = MistyBlue,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    }
+                                    
+                                    Spacer(modifier = Modifier.width(16.dp))
+                                    
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "📺 Video Playback Notice",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            color = OffWhite,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Text(
+                                            text = "Some YouTube videos may not play inside the app due to restrictions. If a video doesn't load, tap the YouTube icon to watch it directly on YouTube.",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = CoolGray,
+                                            lineHeight = 18.sp
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -300,14 +334,14 @@ fun LessonCard(
                                 Icon(
                                     Icons.Default.CheckCircle,
                                     contentDescription = null,
-                                    tint = NeonCyan,
+                                    tint = MistyBlue,
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
                                     text = "Completed",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = NeonCyan
+                                    color = MistyBlue
                                 )
                             }
                         }
@@ -324,7 +358,7 @@ fun LessonCard(
                         .fillMaxWidth()
                         .height(4.dp)
                         .clip(RoundedCornerShape(2.dp)),
-                    color = NeonCyan,
+                    color = MistyBlue,
                     trackColor = DarkGrey
                 )
             }
@@ -383,7 +417,7 @@ fun LessonCard(
                             ) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(24.dp),
-                                    color = NeonCyan
+                                    color = MistyBlue
                                 )
                             }
                         }
@@ -442,7 +476,7 @@ fun FileDownloadItem(file: LessonFile) {
             tint = when (file.fileType.lowercase()) {
                 "pdf" -> CrimsonRed
                 "pptx", "ppt" -> AmberAlert
-                else -> NeonCyan
+                else -> MistyBlue
             },
             modifier = Modifier.size(24.dp)
         )
@@ -465,7 +499,7 @@ fun FileDownloadItem(file: LessonFile) {
         Icon(
             Icons.Default.Download,
             contentDescription = "Download",
-            tint = NeonCyan,
+            tint = MistyBlue,
             modifier = Modifier.size(20.dp)
         )
     }

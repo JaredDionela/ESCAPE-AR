@@ -62,10 +62,33 @@ fun ProfileScreen(
     // Edit profile dialog state
     var showEditDialog by remember { mutableStateOf(false) }
     var editStudentName by remember { mutableStateOf("") }
-    var editTeacherName by remember { mutableStateOf("") }
+    var editTeacherId by remember { mutableStateOf<String?>(null) }  // Changed to teacherId
     var editSection by remember { mutableStateOf("") }
     var isSaving by remember { mutableStateOf(false) }
     var saveError by remember { mutableStateOf<String?>(null) }
+    
+    // Teacher selection state for edit dialog
+    var availableTeachers by remember { mutableStateOf<List<com.example.escape_ar.data.repository.Teacher>>(emptyList()) }
+    var teachersLoading by remember { mutableStateOf(false) }
+    var teachersExpanded by remember { mutableStateOf(false) }
+    
+    // Load teachers when edit dialog opens
+    LaunchedEffect(showEditDialog) {
+        if (showEditDialog && availableTeachers.isEmpty()) {
+            teachersLoading = true
+            val repo = com.example.escape_ar.data.repository.UserRepository(context)
+            repo.getAvailableTeachers().fold(
+                onSuccess = { teachers ->
+                    availableTeachers = teachers
+                    teachersLoading = false
+                },
+                onFailure = { error ->
+                    teachersLoading = false
+                    android.util.Log.e("ProfileScreen", "Error loading teachers", error)
+                }
+            )
+        }
+    }
     
     // Auto-refresh when screen resumes OR when first loaded
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
@@ -86,7 +109,8 @@ fun ProfileScreen(
     }
     
     val totalModules = uiState.modules.size.takeIf { it > 0 } ?: 4
-    val completedModules = uiState.modules.count { it.isCompleted }
+    // Count modules with score >= 70% as completed (passing grade)
+    val completedModules = uiState.modules.count { it.score >= 70 }
     val averageScore = if (uiState.modules.isNotEmpty()) {
         uiState.modules.sumOf { it.score } / uiState.modules.size
     } else 0
@@ -123,7 +147,7 @@ fun ProfileScreen(
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = NeonCyan
+                            tint = MistyBlue
                         )
                     }
                 },
@@ -157,7 +181,7 @@ fun ProfileScreen(
                                 .background(
                                     Brush.radialGradient(
                                         colors = listOf(
-                                            NeonCyan.copy(alpha = 0.3f),
+                                            MistyBlue.copy(alpha = 0.3f),
                                             PurpleHaze.copy(alpha = 0.1f)
                                         )
                                     )
@@ -167,7 +191,7 @@ fun ProfileScreen(
                             Text(
                                 text = uiState.userName.firstOrNull()?.toString() ?: "?",
                                 style = MaterialTheme.typography.headlineLarge,
-                                color = NeonCyan,
+                                color = MistyBlue,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -235,7 +259,7 @@ fun ProfileScreen(
                                             Icon(
                                                 Icons.Default.Class,
                                                 contentDescription = null,
-                                                tint = NeonCyan,
+                                                tint = MistyBlue,
                                                 modifier = Modifier.size(16.dp)
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
@@ -276,14 +300,14 @@ fun ProfileScreen(
                             onClick = {
                                 // Load current values from UI state
                                 editStudentName = uiState.userName
-                                editTeacherName = uiState.teacherName ?: ""
+                                editTeacherId = uiState.teacherId  // Load teacher UUID
                                 editSection = uiState.section ?: ""
                                 saveError = null
                                 showEditDialog = true
                             },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = NeonCyan
+                                contentColor = MistyBlue
                             )
                         ) {
                             Icon(Icons.Default.Edit, contentDescription = null)
@@ -360,14 +384,14 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 if (uiState.isLoading) {
-                    CircularProgressIndicator(color = NeonCyan)
+                    CircularProgressIndicator(color = MistyBlue)
                 } else if (uiState.error != null) {
                     Column {
                         Text(text = uiState.error ?: "Unknown error", color = CrimsonRed)
                         Spacer(modifier = Modifier.height(8.dp))
                         Button(
                             onClick = { viewModel.refreshData() },
-                            colors = ButtonDefaults.buttonColors(containerColor = NeonCyan)
+                            colors = ButtonDefaults.buttonColors(containerColor = MistyBlue)
                         ) {
                             Text("Retry", color = CharcoalGrey)
                         }
@@ -546,10 +570,17 @@ fun ProfileScreen(
         EditProfileDialog(
             show = showEditDialog,
             studentName = editStudentName,
-            teacherName = editTeacherName,
+            selectedTeacherId = editTeacherId,
+            availableTeachers = availableTeachers,
+            teachersLoading = teachersLoading,
+            teachersExpanded = teachersExpanded,
+            onTeachersExpandedChange = { teachersExpanded = it },
             section = editSection,
             onStudentNameChange = { editStudentName = it },
-            onTeacherNameChange = { editTeacherName = it },
+            onTeacherSelect = { teacher ->
+                editTeacherId = teacher.id
+                teachersExpanded = false
+            },
             onSectionChange = { editSection = it },
             onDismiss = {
                 showEditDialog = false
@@ -564,16 +595,16 @@ fun ProfileScreen(
                         val userId = repo.getCurrentUser()?.id
                         
                         if (userId != null) {
-                            // Update profile in Supabase
+                            // Update profile in Supabase with teacherId
                             val result = repo.updateExtendedProfile(
                                 userId = userId,
                                 displayName = editStudentName.trim(),
-                                teacherName = editTeacherName.trim().ifBlank { null },
+                                teacherId = editTeacherId,  // Pass teacher UUID
                                 section = editSection.trim().ifBlank { null }
                             )
                             
                             result.onSuccess {
-                                android.util.Log.d("ProfileScreen", "Profile updated successfully")
+                                android.util.Log.d("ProfileScreen", "Profile updated successfully with teacherId: $editTeacherId")
                                 showEditDialog = false
                                 viewModel.refreshData()
                             }.onFailure { error ->
@@ -625,7 +656,7 @@ private fun StatItem(label: String, value: String) {
         Text(
             text = value,
             style = MaterialTheme.typography.titleLarge,
-            color = NeonCyan,
+            color = MistyBlue,
             fontWeight = FontWeight.Bold
         )
         Text(
@@ -654,10 +685,11 @@ private fun ModuleProgressCard(module: ModuleProgress) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    val isPassed = module.score >= 70 // Passing grade is 70%
                     Icon(
-                        if (module.isCompleted) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                        if (isPassed) Icons.Default.CheckCircle else if (module.score > 0) Icons.Default.Cancel else Icons.Default.RadioButtonUnchecked,
                         contentDescription = null,
-                        tint = if (module.isCompleted) GlowGreen else MetallicSilver,
+                        tint = if (isPassed) GlowGreen else if (module.score > 0) CrimsonRed else MetallicSilver,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
@@ -672,17 +704,24 @@ private fun ModuleProgressCard(module: ModuleProgress) {
                 }
                 
                 Column(horizontalAlignment = Alignment.End) {
+                    val isPassed = module.score >= 70 // Passing grade is 70%
                     Text(
                         text = "${module.score}%",
                         style = MaterialTheme.typography.titleMedium,
-                        color = if (module.isCompleted) GlowGreen else MetallicSilver,
+                        color = if (isPassed) GlowGreen else MetallicSilver,
                         fontWeight = FontWeight.Bold
                     )
-                    if (module.isCompleted) {
+                    if (isPassed) {
                         Text(
                             text = "Passed",
                             style = MaterialTheme.typography.bodySmall,
                             color = GlowGreen
+                        )
+                    } else if (module.score > 0) {
+                        Text(
+                            text = "Failed",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = CrimsonRed
                         )
                     }
                 }
@@ -696,7 +735,7 @@ private fun ModuleProgressCard(module: ModuleProgress) {
                     .fillMaxWidth()
                     .height(6.dp)
                     .clip(RoundedCornerShape(3.dp)),
-                color = if (module.isCompleted) GlowGreen else NeonCyan,
+                color = if (module.score >= 70) GlowGreen else if (module.score > 0) CrimsonRed else MistyBlue,
                 trackColor = DarkGrey,
             )
         }
@@ -711,10 +750,14 @@ private fun ModuleProgressCard(module: ModuleProgress) {
 private fun EditProfileDialog(
     show: Boolean,
     studentName: String,
-    teacherName: String,
+    selectedTeacherId: String?,
+    availableTeachers: List<com.example.escape_ar.data.repository.Teacher>,
+    teachersLoading: Boolean,
+    teachersExpanded: Boolean,
+    onTeachersExpandedChange: (Boolean) -> Unit,
     section: String,
     onStudentNameChange: (String) -> Unit,
-    onTeacherNameChange: (String) -> Unit,
+    onTeacherSelect: (com.example.escape_ar.data.repository.Teacher) -> Unit,
     onSectionChange: (String) -> Unit,
     onDismiss: () -> Unit,
     onSave: () -> Unit,
@@ -730,7 +773,7 @@ private fun EditProfileDialog(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(Icons.Default.Edit, contentDescription = null, tint = NeonCyan)
+                    Icon(Icons.Default.Edit, contentDescription = null, tint = MistyBlue)
                     Text("Edit Profile")
                 }
             },
@@ -765,28 +808,78 @@ private fun EditProfileDialog(
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !isSaving,
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = NeonCyan,
-                            focusedLabelColor = NeonCyan,
-                            focusedLeadingIconColor = NeonCyan
+                            focusedBorderColor = MistyBlue,
+                            focusedLabelColor = MistyBlue,
+                            focusedLeadingIconColor = MistyBlue
                         )
                     )
                     
-                    // Teacher Name
-                    OutlinedTextField(
-                        value = teacherName,
-                        onValueChange = onTeacherNameChange,
-                        label = { Text("Teacher Name (Required)") },
-                        leadingIcon = {
-                            Icon(Icons.Default.School, contentDescription = null)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !isSaving,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = NeonCyan,
-                            focusedLabelColor = NeonCyan,
-                            focusedLeadingIconColor = NeonCyan
+                    // Teacher Selection Dropdown
+                    ExposedDropdownMenuBox(
+                        expanded = teachersExpanded,
+                        onExpandedChange = { if (!isSaving) onTeachersExpandedChange(it) }
+                    ) {
+                        OutlinedTextField(
+                            value = availableTeachers.find { it.id == selectedTeacherId }?.displayName ?: "Select Teacher",
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Teacher (Required)") },
+                            leadingIcon = {
+                                Icon(Icons.Default.School, contentDescription = null)
+                            },
+                            trailingIcon = {
+                                if (teachersLoading) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(20.dp),
+                                        strokeWidth = 2.dp,
+                                        color = MistyBlue
+                                    )
+                                } else {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = teachersExpanded)
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(),
+                            enabled = !isSaving && !teachersLoading,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MistyBlue,
+                                focusedLabelColor = MistyBlue,
+                                focusedLeadingIconColor = MistyBlue
+                            )
                         )
-                    )
+                        
+                        ExposedDropdownMenu(
+                            expanded = teachersExpanded,
+                            onDismissRequest = { onTeachersExpandedChange(false) }
+                        ) {
+                            availableTeachers.forEach { teacher ->
+                                DropdownMenuItem(
+                                    text = { 
+                                        Column {
+                                            Text(
+                                                text = teacher.displayName,
+                                                style = MaterialTheme.typography.bodyLarge
+                                            )
+                                            Text(
+                                                text = teacher.email,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MetallicSilver
+                                            )
+                                        }
+                                    },
+                                    onClick = { onTeacherSelect(teacher) },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Default.School,
+                                            contentDescription = null,
+                                            tint = if (teacher.id == selectedTeacherId) MistyBlue else MetallicSilver
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                    }
                     
                     // Section
                     OutlinedTextField(
@@ -799,9 +892,9 @@ private fun EditProfileDialog(
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !isSaving,
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = NeonCyan,
-                            focusedLabelColor = NeonCyan,
-                            focusedLeadingIconColor = NeonCyan
+                            focusedBorderColor = MistyBlue,
+                            focusedLabelColor = MistyBlue,
+                            focusedLeadingIconColor = MistyBlue
                         )
                     )
                     
@@ -831,7 +924,7 @@ private fun EditProfileDialog(
                     onClick = onSave,
                     enabled = !isSaving && studentName.isNotBlank(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = NeonCyan,
+                        containerColor = MistyBlue,
                         contentColor = DeepSpace
                     )
                 ) {

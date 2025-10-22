@@ -57,7 +57,7 @@ fun QuizScreen(
                 name = "Decantation",
                 description = "Learn how to separate mixtures",
                 icon = Icons.Default.Science,
-                color = NeonCyan,
+                color = MistyBlue,
                 totalQuestions = 0,
                 questions = emptyList()
             ),
@@ -358,7 +358,7 @@ private fun ModuleSelectionScreen(
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = NeonCyan
+                            tint = MistyBlue
                         )
                     }
                 },
@@ -390,7 +390,7 @@ private fun ModuleSelectionScreen(
                             Icon(
                                 Icons.Default.Info,
                                 contentDescription = null,
-                                tint = NeonCyan,
+                                tint = MistyBlue,
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(12.dp))

@@ -24,6 +24,13 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 // signInWith/signUpWith extensions appear unavailable in current supabase-kt version; using manual REST only.
 
+// Teacher data class for multi-teacher support
+data class Teacher(
+    val id: String,
+    val displayName: String,
+    val email: String
+)
+
 // KYLON Mission modules - hard-coded for simplified app architecture
 data class KylonModuleData(
     val id: String,
@@ -39,7 +46,7 @@ object KylonModules {
     val modules = listOf(
         KylonModuleData(
             id = "decantation",
-            title = "Chemical Separation Lab",
+            title = "Decantation",
             description = "Master decantation and filtration techniques to purify corrupted lab samples.",
             storylineContext = "The Labyrinth has contaminated the water supply. Use your chemistry knowledge to separate clean water from pollutants using decantation principles.",
             questionCount = 10,
@@ -48,7 +55,7 @@ object KylonModules {
         ),
         KylonModuleData(
             id = "organ_system",
-            title = "Human Body Systems", 
+            title = "Organ System", 
             description = "Understand how KYLON's biological systems work to ensure optimal performance.",
             storylineContext = "KYLON's bio-mechanical systems are failing. Analyze human organ systems to understand how to repair and enhance KYLON's life support mechanisms.",
             questionCount = 10,
@@ -57,16 +64,16 @@ object KylonModules {
         ),
         KylonModuleData(
             id = "simple_machines",
-            title = "Mechanical Engineering",
+            title = "Simple Machines",
             description = "Study simple machines and mechanical principles essential for lab equipment.",
             storylineContext = "The Labyrinth's mechanical traps use complex simple machine combinations. Master these principles to navigate the facility and reach KYLON.",
             questionCount = 10,
-            difficultyLevel = "intermediate", 
+            difficultyLevel = "intermediate",
             colorHex = "#FFA500"
         ),
         KylonModuleData(
             id = "solar_system",
-            title = " Navigation",
+            title = "Solar System",
             description = "Master solar system knowledge for space-based rescue missions.",
             storylineContext = "KYLON contains star maps essential for humanity's future. Learn the solar system to decode KYLON's  databases and plan the escape route.",
             questionCount = 10,
@@ -132,11 +139,58 @@ class UserRepository(private val context: Context? = null) {
         }
     }
     
+    /**
+     * Fetches list of available teachers for student registration
+     */
+    suspend fun getAvailableTeachers(): Result<List<Teacher>> = withContext(Dispatchers.IO) {
+        try {
+            val rawBase = SupabaseConfig.client.supabaseUrl
+            val base = normalizeBaseUrl(rawBase)
+            
+            if (base.isBlank() || base.contains("localhost", ignoreCase = true)) {
+                return@withContext Result.failure(IllegalStateException("Invalid Supabase URL"))
+            }
+            
+            val url = "$base/rest/v1/profiles?role=eq.teacher&select=id,display_name,email&order=display_name.asc"
+            
+            val response = http.get(url) {
+                header("apikey", SupabaseConfig.client.supabaseKey)
+                header("Accept", "application/json")
+            }
+            
+            if (!response.status.isSuccess()) {
+                val body = response.bodyAsText()
+                Log.e("UserRepository", "getAvailableTeachers failed: ${response.status} - $body")
+                return@withContext Result.failure(
+                    IllegalStateException("Failed to fetch teachers: ${response.status}")
+                )
+            }
+            
+            val body = response.bodyAsText()
+            val jsonArray = Json.parseToJsonElement(body).jsonArray
+            
+            val teachers = jsonArray.map { element ->
+                val obj = element.jsonObject
+                Teacher(
+                    id = obj["id"]?.jsonPrimitive?.content ?: "",
+                    displayName = obj["display_name"]?.jsonPrimitive?.content ?: "Unknown Teacher",
+                    email = obj["email"]?.jsonPrimitive?.content ?: ""
+                )
+            }
+            
+            Log.d("UserRepository", "Fetched ${teachers.size} teachers: ${teachers.map { it.displayName }}")
+            Result.success(teachers)
+        } catch (e: Exception) {
+            Log.e("UserRepository", "Error fetching teachers", e)
+            Result.failure(e)
+        }
+    }
+    
     suspend fun signUp(
         email: String, 
         password: String, 
         fullName: String = "",
-        teacherName: String? = null,
+        teacherId: String? = null,
         section: String? = null
     ): Result<UserInfo> = withContext(Dispatchers.IO) {
         val displayName = fullName.ifEmpty { email.substringBefore("@").replaceFirstChar { it.uppercase() } }
@@ -163,8 +217,8 @@ class UserRepository(private val context: Context? = null) {
             // Try immediate sign in to obtain session
             val signInResult = signIn(email, password)
             signInResult.getOrNull()?.let { userInfo ->
-                // Create extended profile with teacher name and section (replaces basic profile)
-                ensureExtendedProfileAndSettings(userInfo.id, displayName, teacherName, section, email)
+                // Create extended profile with teacher_id and section
+                ensureExtendedProfileAndSettings(userInfo.id, displayName, teacherId, section, email)
             }
             signInResult
         } catch (e: Exception) {
@@ -231,7 +285,7 @@ class UserRepository(private val context: Context? = null) {
     suspend fun updateExtendedProfile(
         userId: String,
         displayName: String,
-        teacherName: String?,
+        teacherId: String?,  // Changed from teacherName to teacherId
         section: String?
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
@@ -244,10 +298,11 @@ class UserRepository(private val context: Context? = null) {
             
             val body = buildJsonObject {
                 put("display_name", displayName)
-                if (teacherName != null) {
-                    put("teacher_name", teacherName)
+                // Update teacher_id (UUID foreign key) instead of teacher_name
+                if (teacherId != null) {
+                    put("teacher_id", teacherId)
                 } else {
-                    put("teacher_name", kotlinx.serialization.json.JsonNull)
+                    put("teacher_id", kotlinx.serialization.json.JsonNull)
                 }
                 if (section != null) {
                     put("section", section)
@@ -265,7 +320,7 @@ class UserRepository(private val context: Context? = null) {
             }
             
             if (response.status.isSuccess()) {
-                Log.d("UserRepository", "Profile updated successfully")
+                Log.d("UserRepository", "Profile updated successfully - teacherId: $teacherId")
                 
                 // Update cached user
                 currentUserCache = currentUserCache?.copy(fullName = displayName)
@@ -290,7 +345,7 @@ class UserRepository(private val context: Context? = null) {
     }
     
     /**
-     * Get extended user profile (includes teacher name and section)
+     * Get extended user profile (includes teacher name and section via JOIN)
      */
     suspend fun getExtendedUserProfile(userId: String): Result<ExtendedUserProfile> = withContext(Dispatchers.IO) {
         try {
@@ -299,7 +354,8 @@ class UserRepository(private val context: Context? = null) {
             )
             
             val base = normalizeBaseUrl(supabase.supabaseUrl)
-            val url = "$base/rest/v1/profiles?id=eq.$userId&select=*"
+            // Use Postgrest embedded resources to JOIN with teacher profile
+            val url = "$base/rest/v1/profiles?id=eq.$userId&select=id,email,display_name,full_name,role,teacher_id,section,teacher:teacher_id(display_name)"
             
             val response = http.get(url) {
                 header("apikey", supabase.supabaseKey)
@@ -317,8 +373,24 @@ class UserRepository(private val context: Context? = null) {
                     )
                 }
                 
-                val profile = Json.decodeFromString<ExtendedUserProfile>(jsonArray[0].toString())
-                Log.d("UserRepository", "Loaded extended profile: ${profile.displayName}, teacher=${profile.teacherName}, section=${profile.section}")
+                val profileObj = jsonArray[0].jsonObject
+                
+                // Extract teacher name from nested teacher object
+                val teacherDisplayName = profileObj["teacher"]?.jsonObject?.get("display_name")?.jsonPrimitive?.content
+                
+                // Build ExtendedUserProfile with teacher name from JOIN
+                val profile = ExtendedUserProfile(
+                    id = profileObj["id"]?.jsonPrimitive?.content ?: userId,
+                    email = profileObj["email"]?.jsonPrimitive?.content,
+                    displayName = profileObj["display_name"]?.jsonPrimitive?.content ?: "User",
+                    fullName = profileObj["full_name"]?.jsonPrimitive?.content,
+                    role = profileObj["role"]?.jsonPrimitive?.content,
+                    teacherId = profileObj["teacher_id"]?.jsonPrimitive?.content,
+                    teacherName = teacherDisplayName, // From JOIN result
+                    section = profileObj["section"]?.jsonPrimitive?.content
+                )
+                
+                Log.d("UserRepository", "Loaded extended profile: ${profile.displayName}, teacher=${profile.teacherName} (ID: ${profile.teacherId}), section=${profile.section}")
                 
                 Result.success(profile)
             } else {
@@ -597,8 +669,8 @@ class UserRepository(private val context: Context? = null) {
             val currentBestScore = getCurrentBestScore(quizProgress.userId, quizProgress.module)
             val newScore = quizProgress.score.toInt()
             val finalBestScore = maxOf(currentBestScore, newScore)
-            // Mark as completed once ANY quiz attempt is made (not just 70%+)
-            val isCompleted = true  // Always true when quiz is submitted
+            // Mark as completed only if best score is 70% or higher (passing grade)
+            val isCompleted = finalBestScore >= 70
             
             Log.d("UserRepository", "Score comparison: current=$currentBestScore, new=$newScore, final=$finalBestScore, completed=$isCompleted")
             
@@ -619,6 +691,7 @@ class UserRepository(private val context: Context? = null) {
                     header("apikey", supabase.supabaseKey)
                     header("Authorization", "Bearer $token")
                     header("Content-Type", "application/json")
+                    header("Prefer", "return=representation")
                     setBody(updatePayload)
                 }
                 val updateText = updateResp.bodyAsText()
@@ -626,6 +699,7 @@ class UserRepository(private val context: Context? = null) {
                     Log.e("UserRepository", "Progress update failed ${updateResp.status} $updateText")
                 } else {
                     Log.d("UserRepository", "Progress updated successfully for ${quizProgress.module} with score $finalBestScore")
+                    Log.d("UserRepository", "Update response: $updateText")
                 }
             } else {
                 // Insert new record
@@ -644,13 +718,16 @@ class UserRepository(private val context: Context? = null) {
                     header("apikey", supabase.supabaseKey)
                     header("Authorization", "Bearer $token")
                     header("Content-Type", "application/json")
+                    header("Prefer", "return=representation")
                     setBody(insertPayload)
                 }
                 val insertText = insertResp.bodyAsText()
                 if (!insertResp.status.isSuccess()) {
                     Log.e("UserRepository", "Progress insert failed ${insertResp.status} $insertText")
+                    Log.e("UserRepository", "Failed payload was: $insertPayload")
                 } else {
                     Log.d("UserRepository", "Progress inserted successfully for ${quizProgress.module} with score $finalBestScore")
+                    Log.d("UserRepository", "Insert response: $insertText")
                 }
             }
         } catch (e: Exception) {
@@ -760,12 +837,12 @@ class UserRepository(private val context: Context? = null) {
     }
     
     /**
-     * Create extended profile with teacher name and section
+     * Create extended profile with teacher_id and section
      */
     private suspend fun ensureExtendedProfileAndSettings(
         userId: String,
         displayName: String,
-        teacherName: String?,
+        teacherId: String?,
         section: String?,
         email: String
     ) {
@@ -782,11 +859,12 @@ class UserRepository(private val context: Context? = null) {
                 put("email", email)
                 put("full_name", displayName)
                 put("display_name", displayName)
-                if (!teacherName.isNullOrBlank()) put("teacher_name", teacherName)
+                put("role", "student")  // Explicitly set role as student
+                if (!teacherId.isNullOrBlank()) put("teacher_id", teacherId)  // FK to teacher
                 if (!section.isNullOrBlank()) put("section", section)
             }.toString()
             
-            Log.d("UserRepository", "Creating extended profile - userId: $userId, email: $email, displayName: $displayName, teacherName: '$teacherName', section: '$section'")
+            Log.d("UserRepository", "Creating student profile - userId: $userId, email: $email, displayName: $displayName, teacherId: '$teacherId', section: '$section'")
             Log.d("UserRepository", "Profile JSON body: $profileBody")
             
             val profileResp = http.post(profileUrl) {

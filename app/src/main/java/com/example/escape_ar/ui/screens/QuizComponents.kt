@@ -115,7 +115,7 @@ fun QuizQuestionScreen(
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = NeonCyan
+                            tint = MistyBlue
                         )
                     }
                 },
@@ -493,7 +493,7 @@ fun QuizResultsScreen(
                             onClick = onNavigateBackToModules,
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = NeonCyan,
+                                containerColor = MistyBlue,
                                 contentColor = DeepSpace
                             )
                         ) {
@@ -518,7 +518,7 @@ private fun ScoreItem(label: String, value: String) {
         Text(
             text = value,
             style = MaterialTheme.typography.headlineSmall,
-            color = NeonCyan,
+            color = MistyBlue,
             fontWeight = FontWeight.Bold
         )
         Text(

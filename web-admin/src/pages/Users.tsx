@@ -20,21 +20,31 @@ import {
   Button,
   Grid,
   Card,
-  CardContent
+  CardContent,
+  TextField,
+  Tooltip,
+  Alert
 } from '@mui/material'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import QuizIcon from '@mui/icons-material/Quiz'
 import PercentIcon from '@mui/icons-material/Percent'
-import { getAllUsers, deleteUser, getUserStats } from '../lib/api/users'
+import InfoIcon from '@mui/icons-material/Info'
+import { getAllUsers, deleteUser, getUserStats, updateUser } from '../lib/api/users'
 import type { Profile } from '../types/database.types'
 
 export function Users() {
   const [users, setUsers] = useState<Profile[]>([])
   const [loading, setLoading] = useState(true)
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null)
+  const [editFormData, setEditFormData] = useState({
+    display_name: '',
+    teacher_name: '',
+    section: ''
+  })
   const [userStats, setUserStats] = useState<{
     completedLessons: number
     totalQuizzes: number
@@ -87,6 +97,37 @@ export function Users() {
       setUserStats(stats)
     } catch (error) {
       console.error('Error loading user stats:', error)
+    }
+  }
+
+  const handleEditUser = (user: Profile) => {
+    setSelectedUser(user)
+    setEditFormData({
+      display_name: user.display_name || '',
+      teacher_name: user.teacher_name || '',
+      section: user.section || ''
+    })
+    setEditOpen(true)
+  }
+
+  const handleUpdateUser = async () => {
+    if (!selectedUser) return
+    
+    try {
+      await updateUser(selectedUser.id, {
+        display_name: editFormData.display_name,
+        teacher_name: editFormData.teacher_name || undefined,
+        section: editFormData.section || undefined
+      })
+      
+      // Reload users to reflect changes
+      await loadUsers()
+      setEditOpen(false)
+      setSelectedUser(null)
+      alert('User updated successfully!')
+    } catch (error) {
+      console.error('Error updating user:', error)
+      alert('Failed to update user')
     }
   }
 
@@ -155,6 +196,7 @@ export function Users() {
                   <IconButton 
                     color="secondary" 
                     size="small"
+                    onClick={() => handleEditUser(user)}
                     title="Edit user"
                   >
                     <EditIcon />
@@ -286,10 +328,23 @@ export function Users() {
                               <TableCell align="center">
                                 {module.latestScore !== null ? (
                                   <Box>
-                                    <Typography variant="body2" fontWeight="bold">
+                                    <Typography 
+                                      variant="body2" 
+                                      fontWeight="bold"
+                                      color={module.latestScore >= 70 ? 'success.main' : 'error.main'}
+                                    >
                                       {Math.round(module.latestScore)}%
                                     </Typography>
-                                    <Typography variant="caption" color="text.secondary">
+                                    <Typography 
+                                      variant="caption" 
+                                      sx={{ 
+                                        color: module.latestScore >= 70 ? 'success.light' : 'error.light',
+                                        fontWeight: 500
+                                      }}
+                                    >
+                                      {module.latestScore >= 70 ? '✓ Passed' : '✗ Failed'}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                                       ({module.correctAnswers}/{module.totalQuestions})
                                     </Typography>
                                   </Box>
@@ -330,6 +385,96 @@ export function Users() {
             </DialogContent>
             <DialogActions>
               <Button onClick={() => setDetailsOpen(false)}>Close</Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
+
+      {/* Edit User Dialog */}
+      <Dialog 
+        open={editOpen} 
+        onClose={() => {
+          setEditOpen(false)
+          setSelectedUser(null)
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        {selectedUser && (
+          <>
+            <DialogTitle>Edit User Profile</DialogTitle>
+            <DialogContent>
+              <Alert severity="info" sx={{ mb: 3, mt: 2 }}>
+                <Typography variant="body2">
+                  <strong>Note:</strong> Email and role cannot be changed for security reasons.
+                </Typography>
+              </Alert>
+
+              {/* Read-only Email Field */}
+              <TextField
+                label="Email Address"
+                value={selectedUser.email}
+                fullWidth
+                disabled
+                sx={{ mb: 2 }}
+                InputProps={{
+                  endAdornment: (
+                    <Tooltip title="Email cannot be changed after account creation">
+                      <InfoIcon color="disabled" fontSize="small" />
+                    </Tooltip>
+                  )
+                }}
+              />
+
+              {/* Read-only Role Field */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
+                  Role (cannot be changed)
+                </Typography>
+                <Chip 
+                  label={selectedUser.role?.toUpperCase() || 'STUDENT'} 
+                  color="primary"
+                  variant="outlined"
+                />
+              </Box>
+
+              {/* Editable Fields */}
+              <TextField
+                label="Display Name"
+                value={editFormData.display_name}
+                onChange={(e) => setEditFormData({ ...editFormData, display_name: e.target.value })}
+                fullWidth
+                required
+                sx={{ mb: 2 }}
+                helperText="This name will be displayed throughout the app"
+              />
+
+              <TextField
+                label="Teacher Name"
+                value={editFormData.teacher_name}
+                onChange={(e) => setEditFormData({ ...editFormData, teacher_name: e.target.value })}
+                fullWidth
+                sx={{ mb: 2 }}
+                helperText="Optional: Name of the assigned teacher"
+              />
+
+              <TextField
+                label="Section"
+                value={editFormData.section}
+                onChange={(e) => setEditFormData({ ...editFormData, section: e.target.value })}
+                fullWidth
+                helperText="Optional: Student's class section (e.g., Grade 7-A)"
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setEditOpen(false)}>Cancel</Button>
+              <Button 
+                onClick={handleUpdateUser} 
+                variant="contained"
+                disabled={!editFormData.display_name.trim()}
+              >
+                Save Changes
+              </Button>
             </DialogActions>
           </>
         )}

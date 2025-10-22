@@ -35,12 +35,29 @@ export interface LessonProgress {
 
 export interface Profile {
   id: string
+  email: string
   display_name: string
-  teacher_name?: string
-  section?: string
-  avatar_url?: string
+  role: 'student' | 'teacher'
+  teacher_id?: string | null       // NEW: Link to teacher account
+  teacher_name?: string | null
+  section?: string | null
+  avatar_url?: string | null
   created_at: string
   updated_at: string
+}
+
+// Extended interfaces for type safety
+export interface StudentProfile extends Profile {
+  role: 'student'
+  teacher_id: string  // Required for students
+  teacher?: TeacherProfile  // Populated when joined
+}
+
+export interface TeacherProfile extends Profile {
+  role: 'teacher'
+  teacher_id: null  // Always null for teachers
+  students?: StudentProfile[]  // Populated when needed
+  student_count?: number  // Computed field
 }
 
 export interface QuizQuestion {

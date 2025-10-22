@@ -11,24 +11,24 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
-// Dark Sci-Fi Theme - Mysterious Labyrinth
+// 🎨 **UNIFIED THEME** - Student-Friendly Dark Theme
 private val DarkSciFiColorScheme = darkColorScheme(
-    primary = NeonCyan,
-    onPrimary = DeepSpace,
-    secondary = ElectricBlue,
-    onSecondary = WhiteSmoke,
-    tertiary = PurpleHaze,
-    onTertiary = WhiteSmoke,
-    background = DeepSpace,
-    onBackground = WhiteSmoke,
-    surface = DarkGrey,
-    onSurface = WhiteSmoke,
-    surfaceVariant = CharcoalGrey,
-    onSurfaceVariant = MetallicSilver,
-    error = CrimsonRed,
-    onError = WhiteSmoke,
-    outline = MetallicSilver,
-    outlineVariant = CharcoalGrey
+    primary = SoftTeal,              // Soft Teal (easier on eyes than harsh cyan)
+    onPrimary = DarkNavy,
+    secondary = SoftPurple,          // Soft Purple (main brand)
+    onSecondary = TextWhite,
+    tertiary = BrandIndigo,          // Indigo accent
+    onTertiary = TextWhite,
+    background = DarkNavy,           // Dark Navy background
+    onBackground = TextWhite,
+    surface = DarkSlate,             // Slate surfaces
+    onSurface = TextWhite,
+    surfaceVariant = DarkGray,
+    onSurfaceVariant = TextMuted,
+    error = RoseSoft,                // Soft Rose (easier on eyes)
+    onError = TextWhite,
+    outline = TextMuted,
+    outlineVariant = DarkGray
 )
 
 private val LightColorScheme = lightColorScheme(

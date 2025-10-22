@@ -123,7 +123,7 @@ fun LoadingScreen(
             Text(
                 text = message ?: "Initializing Systems...",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MetallicSilver.copy(alpha = 0.7f),
+                color = TextMuted.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center
             )
         }

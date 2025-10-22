@@ -1,15 +1,35 @@
 import { supabase } from '../supabase'
 import type { Profile } from '../../types/database.types'
 
-// Fetch all users
+// Fetch all users (filtered by teacher for students)
 export async function getAllUsers() {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .order('created_at', { ascending: false })
+  // Get current logged-in user
+  const { data: { user } } = await supabase.auth.getUser()
   
-  if (error) throw error
-  return data as Profile[]
+  if (!user) throw new Error('Not authenticated')
+  
+  // Get current user's profile to check role
+  const { data: currentProfile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+  
+  // If teacher, only show their students
+  if (currentProfile?.role === 'teacher') {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('teacher_id', user.id)  // Only their students
+      .eq('role', 'student')
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data as Profile[]
+  }
+  
+  // If not teacher (shouldn't happen with auth), return empty
+  return []
 }
 
 // Get single user
@@ -26,7 +46,7 @@ export async function getUser(id: string) {
 
 // Update user profile
 export async function updateUser(id: string, updates: Partial<Profile>) {
-  const { data, error } = await supabase
+  const { data, error} = await supabase
     .from('profiles')
     .update(updates)
     .eq('id', id)
@@ -35,6 +55,60 @@ export async function updateUser(id: string, updates: Partial<Profile>) {
   
   if (error) throw error
   return data as Profile
+}
+
+// Register new student (linked to current teacher)
+export async function registerStudent(studentData: {
+  email: string
+  password: string
+  display_name: string
+  section?: string
+}) {
+  // Get current teacher
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+  
+  // Verify user is a teacher
+  const { data: teacherProfile } = await supabase
+    .from('profiles')
+    .select('role, display_name')
+    .eq('id', user.id)
+    .single()
+    
+  if (teacherProfile?.role !== 'teacher') {
+    throw new Error('Only teachers can register students')
+  }
+  
+  // Create auth user
+  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    email: studentData.email,
+    password: studentData.password,
+    email_confirm: true,  // Auto-confirm for admin-created accounts
+    user_metadata: {
+      display_name: studentData.display_name,
+      role: 'student'
+    }
+  })
+  
+  if (authError) throw authError
+  if (!authData.user) throw new Error('Failed to create user')
+  
+  // Create profile linked to current teacher
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .insert({
+      id: authData.user.id,
+      email: studentData.email,
+      display_name: studentData.display_name,
+      role: 'student',
+      teacher_id: user.id,  // Link to current teacher
+      teacher_name: teacherProfile.display_name,  // Will be synced by trigger
+      section: studentData.section || null
+    })
+  
+  if (profileError) throw profileError
+  
+  return authData.user
 }
 
 // Delete user
@@ -50,14 +124,6 @@ export async function deleteUser(id: string) {
 // Get user statistics with detailed module breakdown
 export async function getUserStats(userId: string) {
   try {
-    // Get lesson progress
-    const { data: lessonProgress, error: lessonError } = await supabase
-      .from('lesson_progress')
-      .select('*')
-      .eq('user_id', userId)
-    
-    if (lessonError) throw lessonError
-
     // Get quiz results using NEW summary fields
     const { data: quizResults, error: quizError } = await supabase
       .from('quiz_results')
@@ -75,7 +141,8 @@ export async function getUserStats(userId: string) {
     
     if (progressError) throw progressError
 
-    const completedLessons = lessonProgress?.filter(l => l.completed).length || 0
+    // Note: lesson_progress table has been removed - video tracking handled by YouTube
+    const completedLessons = 0 // No longer tracked
     const totalQuizzes = quizResults?.length || 0
     
     // Calculate overall accuracy from summary records
@@ -131,26 +198,10 @@ export async function getUserStats(userId: string) {
 }
 
 // Get detailed lesson progress for a user
-export async function getUserLessonProgress(userId: string) {
-  try {
-    const { data, error } = await supabase
-      .from('lesson_progress')
-      .select(`
-        *,
-        lessons!inner(
-          title,
-          module_id,
-          order_index
-        )
-      `)
-      .eq('user_id', userId)
-      .order('updated_at', { ascending: false });
-    
-    if (error) throw error;
-    
-    return data || [];
-  } catch (error) {
-    console.error('Error fetching user lesson progress:', error);
-    return [];
-  }
+// NOTE: lesson_progress table removed - video tracking handled by YouTube
+export async function getUserLessonProgress(_userId: string) {
+  // Return empty array since lesson progress is no longer tracked in database
+  // YouTube embedded player maintains playback history
+  console.info('Lesson progress tracking is handled by YouTube, not database');
+  return [];
 }

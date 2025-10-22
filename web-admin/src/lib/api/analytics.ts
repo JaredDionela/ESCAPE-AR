@@ -16,10 +16,16 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   try {
     console.log('Fetching dashboard stats...');
     
-    // Get total users
+    // Get current teacher ID
+    const { data: { user } } = await supabase.auth.getUser()
+    const teacherId = user?.id
+    
+    // Get total users (only teacher's students)
     const { count: usersCount, error: usersError } = await supabase
       .from('profiles')
       .select('*', { count: 'exact', head: true })
+      .eq('teacher_id', teacherId)  // Filter by teacher
+      .eq('role', 'student')
     
     if (usersError) {
       console.error('Error fetching users count:', usersError);
@@ -44,18 +50,31 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     }
 
     // Get completed quizzes (unique users who completed at least one quiz)
-    const { data: completedUsers, error: completedError } = await supabase
-      .from('progress')
-      .select('user_id')
-      .eq('completed', true)
+    // Only count teacher's students - first get student IDs
+    const { data: teacherStudents } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('teacher_id', teacherId)
+      .eq('role', 'student')
     
-    if (completedError) {
-      console.error('Error fetching completed quizzes:', completedError);
-    }
+    const studentIds = teacherStudents?.map(s => s.id) || []
+    
+    let completedQuizzes = 0
+    if (studentIds.length > 0) {
+      const { data: completedUsers, error: completedError } = await supabase
+        .from('progress')
+        .select('user_id')
+        .eq('completed', true)
+        .in('user_id', studentIds)
+      
+      if (completedError) {
+        console.error('Error fetching completed quizzes:', completedError);
+      }
 
-    // Count unique users
-    const uniqueUsers = new Set(completedUsers?.map(u => u.user_id) || [])
-    const completedQuizzes = uniqueUsers.size
+      // Count unique users
+      const uniqueUsers = new Set(completedUsers?.map(u => u.user_id) || [])
+      completedQuizzes = uniqueUsers.size
+    }
 
     // Get recent activity
     const recentActivity = await getRecentActivity()
@@ -86,10 +105,33 @@ async function getRecentActivity() {
   const activities: Array<{ type: string; message: string; timestamp: string }> = []
 
   try {
-    // Recent users
+    // Get current teacher's ID
+    const { data: { user } } = await supabase.auth.getUser()
+    const teacherId = user?.id
+
+    if (!teacherId) {
+      return []
+    }
+
+    // Get teacher's students
+    const { data: teacherStudents } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('teacher_id', teacherId)
+      .eq('role', 'student')
+
+    const studentIds = teacherStudents?.map(s => s.id) || []
+
+    if (studentIds.length === 0) {
+      return []
+    }
+
+    // Recent users (new students for this teacher)
     const { data: recentUsers } = await supabase
       .from('profiles')
       .select('display_name, created_at')
+      .eq('teacher_id', teacherId)
+      .eq('role', 'student')
       .order('created_at', { ascending: false })
       .limit(3)
 
@@ -103,24 +145,35 @@ async function getRecentActivity() {
       })
     }
 
-    // Recent lesson completions
-    const { data: recentCompletions } = await supabase
-      .from('lesson_progress')
+    // Note: Lesson completion tracking removed - video progress handled by YouTube
+    // Recent quiz completions instead (only for teacher's students)
+    const { data: recentQuizzes } = await supabase
+      .from('quiz_results')
       .select(`
-        completed_at,
-        profiles!inner(display_name),
-        lessons!inner(title)
+        created_at,
+        score_percentage,
+        module_id,
+        user_id,
+        profiles!inner(display_name)
       `)
-      .eq('completed', true)
-      .order('completed_at', { ascending: false })
+      .in('user_id', studentIds)
+      .not('score_percentage', 'is', null) // Only summary records
+      .order('created_at', { ascending: false })
       .limit(5)
 
-    if (recentCompletions) {
-      recentCompletions.forEach((completion: any) => {
+    if (recentQuizzes) {
+      recentQuizzes.forEach((quiz: any) => {
+        const moduleNames: Record<string, string> = {
+          'decantation': 'Decantation',
+          'organ_system': 'Organ System',
+          'simple_machines': 'Simple Machines',
+          'solar_system': 'Solar System'
+        }
+        const moduleName = moduleNames[quiz.module_id] || quiz.module_id
         activities.push({
-          type: 'lesson',
-          message: `${completion.profiles.display_name} completed "${completion.lessons.title}"`,
-          timestamp: completion.completed_at
+          type: 'quiz',
+          message: `${quiz.profiles.display_name} scored ${Math.round(quiz.score_percentage)}% on ${moduleName} quiz`,
+          timestamp: quiz.created_at
         })
       })
     }
@@ -149,13 +202,25 @@ export async function getModuleProgress(): Promise<ModuleProgress[]> {
   try {
     console.log('Fetching module progress...');
     
-    const { error: lessonsError } = await supabase
-      .from('lessons')
-      .select('module_id')
+    // Get current teacher's ID
+    const { data: { user } } = await supabase.auth.getUser()
+    const teacherId = user?.id
 
-    if (lessonsError) {
-      console.error('Error fetching lessons for module progress:', lessonsError);
-      throw lessonsError;
+    if (!teacherId) {
+      return []
+    }
+
+    // Get teacher's students
+    const { data: teacherStudents } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('teacher_id', teacherId)
+      .eq('role', 'student')
+
+    const studentIds = teacherStudents?.map(s => s.id) || []
+
+    if (studentIds.length === 0) {
+      return []
     }
 
     const modules = ['decantation', 'organ_system', 'simple_machines', 'solar_system']
@@ -169,6 +234,7 @@ export async function getModuleProgress(): Promise<ModuleProgress[]> {
     const progress: ModuleProgress[] = []
 
     for (const moduleId of modules) {
+      // Count total lessons in this module
       const { count: totalLessons, error: countError } = await supabase
         .from('lessons')
         .select('*', { count: 'exact', head: true })
@@ -178,37 +244,30 @@ export async function getModuleProgress(): Promise<ModuleProgress[]> {
         console.error(`Error counting lessons for module ${moduleId}:`, countError);
       }
 
-      const { data: lessonData, error: lessonIdError } = await supabase
-        .from('lessons')
-        .select('id')
-        .eq('module_id', moduleId)
+      // Note: lesson_progress table removed - using completed modules from progress table instead
+      // Count unique users (from teacher's students) who have completed this module
+      const { count: completedUsers, error: progressError } = await supabase
+        .from('progress')
+        .select('*', { count: 'exact', head: true })
+        .eq('module', moduleId)
+        .eq('completed', true)
+        .in('user_id', studentIds)
       
-      if (lessonIdError) {
-        console.error(`Error fetching lesson IDs for module ${moduleId}:`, lessonIdError);
+      if (progressError) {
+        console.error(`Error counting completed users for module ${moduleId}:`, progressError);
       }
 
-      const lessonIds = lessonData?.map(l => l.id) || []
-      
-      let completedLessons = 0
-      if (lessonIds.length > 0) {
-        const { count, error: progressError } = await supabase
-          .from('lesson_progress')
-          .select('*', { count: 'exact', head: true })
-          .eq('completed', true)
-          .in('lesson_id', lessonIds)
-        
-        if (progressError) {
-          console.error(`Error counting completed lessons for module ${moduleId}:`, progressError);
-        }
-        completedLessons = count || 0
-      }
+      // Calculate completion rate based on teacher's students who completed the module
+      const totalUsers = studentIds.length
 
       progress.push({
         module_id: moduleId,
         module_name: moduleNames[moduleId] || moduleId,
         total_lessons: totalLessons || 0,
-        completed_lessons: completedLessons,
-        completion_rate: totalLessons ? ((completedLessons || 0) / totalLessons) * 100 : 0
+        completed_lessons: completedUsers || 0, // Repurposed: now means users who completed module
+        completion_rate: totalUsers > 0 
+          ? ((completedUsers || 0) / totalUsers) * 100 
+          : 0
       })
     }
 
@@ -243,25 +302,56 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
   try {
     console.log('Fetching dashboard metrics...')
 
-    // 1. Get total users and calculate possible completions
-    const { count: totalUsers, error: usersError } = await supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true })
-    
-    if (usersError) {
-      console.error('Error counting users:', usersError)
+    // Get current teacher's ID
+    const { data: { user } } = await supabase.auth.getUser()
+    const teacherId = user?.id
+
+    if (!teacherId) {
+      return {
+        quizCompletionRate: 0,
+        totalCompletions: 0,
+        totalPossible: 0,
+        averageScore: 0,
+        studentsNeedingHelp: 0,
+        topPerformer: null,
+        recentCompletions: []
+      }
     }
 
+    // Get teacher's students
+    const { data: teacherStudents } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('teacher_id', teacherId)
+      .eq('role', 'student')
+
+    const studentIds = teacherStudents?.map(s => s.id) || []
+
+    if (studentIds.length === 0) {
+      return {
+        quizCompletionRate: 0,
+        totalCompletions: 0,
+        totalPossible: 0,
+        averageScore: 0,
+        studentsNeedingHelp: 0,
+        topPerformer: null,
+        recentCompletions: []
+      }
+    }
+
+    // 1. Get total users and calculate possible completions
+    const totalUsers = studentIds.length
     const totalModules = 4 // decantation, organ_system, simple_machines, solar_system
-    const totalPossible = (totalUsers || 0) * totalModules
+    const totalPossible = totalUsers * totalModules
 
     console.log('Total users:', totalUsers, 'Total possible completions:', totalPossible)
 
-    // 2. Get completion rate from progress table
+    // 2. Get completion rate from progress table (only for teacher's students)
     const { count: totalCompletions, error: completionsError } = await supabase
       .from('progress')
       .select('*', { count: 'exact', head: true })
       .eq('completed', true)
+      .in('user_id', studentIds)
     
     if (completionsError) {
       console.error('Error counting completions:', completionsError)
@@ -275,11 +365,12 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
     
     console.log('Quiz completion rate:', quizCompletionRate + '%')
 
-    // 3. Get average score across all completed quizzes
+    // 3. Get average score across all completed quizzes (only for teacher's students)
     const { data: scores, error: scoresError } = await supabase
       .from('progress')
       .select('best_score')
       .eq('completed', true)
+      .in('user_id', studentIds)
     
     if (scoresError) {
       console.error('Error fetching scores:', scoresError)
@@ -289,12 +380,13 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
       ? Math.round(scores.reduce((sum, s) => sum + (s.best_score || 0), 0) / scores.length)
       : 0
 
-    // 4. Get students needing help (best score < 50% in any module)
+    // 4. Get students needing help (best score < 50% in any module, only teacher's students)
     const { data: strugglingStudents, error: strugglingError } = await supabase
       .from('progress')
       .select('user_id')
       .eq('completed', true)
       .lt('best_score', 50)
+      .in('user_id', studentIds)
     
     if (strugglingError) {
       console.error('Error fetching struggling students:', strugglingError)
@@ -303,7 +395,7 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
     const uniqueStrugglingStudents = new Set(strugglingStudents?.map(s => s.user_id) || [])
     const studentsNeedingHelp = uniqueStrugglingStudents.size
 
-    // 5. Get top performer
+    // 5. Get top performer (only from teacher's students)
     const { data: topPerformers, error: topError } = await supabase
       .from('progress')
       .select(`
@@ -312,6 +404,7 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
         profiles!inner(full_name)
       `)
       .eq('completed', true)
+      .in('user_id', studentIds)
     
     if (topError) {
       console.error('Error fetching top performers:', topError)
@@ -346,7 +439,7 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
 
     console.log('Top performer final:', topPerformerData)
 
-    // 6. Get recent completions (last 5)
+    // 6. Get recent completions (last 5, only for teacher's students)
     const { data: recentData, error: recentError } = await supabase
       .from('quiz_results')
       .select(`
@@ -357,6 +450,7 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
         profiles!inner(full_name)
       `)
       .not('score_percentage', 'is', null)
+      .in('user_id', studentIds)
       .order('created_at', { ascending: false })
       .limit(5)
     
@@ -419,10 +513,32 @@ export async function getModulePerformance(): Promise<ModulePerformance[]> {
   try {
     console.log('Fetching module performance...')
 
+    // Get current teacher's ID
+    const { data: { user } } = await supabase.auth.getUser()
+    const teacherId = user?.id
+
+    if (!teacherId) {
+      return []
+    }
+
+    // Get teacher's students
+    const { data: teacherStudents } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('teacher_id', teacherId)
+      .eq('role', 'student')
+
+    const studentIds = teacherStudents?.map(s => s.id) || []
+
+    if (studentIds.length === 0) {
+      return []
+    }
+
     const { data: moduleData, error: moduleError } = await supabase
       .from('progress')
       .select('module, best_score, completed')
       .eq('completed', true)
+      .in('user_id', studentIds)
     
     if (moduleError) {
       console.error('Error fetching module performance:', moduleError)
@@ -479,6 +595,27 @@ export async function getQuizAnalytics(): Promise<QuizAnalytics[]> {
   try {
     console.log('Fetching quiz analytics with unique user completions...')
     
+    // Get current teacher's ID
+    const { data: { user } } = await supabase.auth.getUser()
+    const teacherId = user?.id
+
+    if (!teacherId) {
+      return []
+    }
+
+    // Get teacher's students
+    const { data: teacherStudents } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('teacher_id', teacherId)
+      .eq('role', 'student')
+
+    const studentIds = teacherStudents?.map(s => s.id) || []
+
+    if (studentIds.length === 0) {
+      return []
+    }
+    
     const modules = ['decantation', 'organ_system', 'simple_machines', 'solar_system']
     const moduleNames: Record<string, string> = {
       'decantation': 'Decantation',
@@ -490,24 +627,26 @@ export async function getQuizAnalytics(): Promise<QuizAnalytics[]> {
     const analytics: QuizAnalytics[] = []
     
     for (const moduleId of modules) {
-      // Get progress data (shows unique users who completed this module)
+      // Get progress data (shows unique users who completed this module, only teacher's students)
       const { data: progressData, error: progressError } = await supabase
         .from('progress')
         .select('user_id, best_score, completed')
         .eq('module', moduleId)
         .eq('completed', true) // Only completed quizzes
+        .in('user_id', studentIds)
       
       if (progressError) {
         console.error(`Error fetching progress for ${moduleId}:`, progressError)
         continue
       }
       
-      // Get all quiz attempts for average questions calculation
+      // Get all quiz attempts for average questions calculation (only for teacher's students)
       const { data: quizData, error: quizError } = await supabase
         .from('quiz_results')
         .select('total_questions, score_percentage')
         .eq('module_id', moduleId)
         .not('score_percentage', 'is', null)
+        .in('user_id', studentIds)
       
       if (quizError) {
         console.error(`Error fetching quiz results for ${moduleId}:`, quizError)

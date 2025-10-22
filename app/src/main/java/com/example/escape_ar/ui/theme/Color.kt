@@ -2,49 +2,112 @@ package com.example.escape_ar.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Dark Sci-Fi Color Palette - Mysterious Labyrinth Theme
-val DeepSpace = Color(0xFF0A0E1A)           // Dark background
-val NeonCyan = Color(0xFF00F5FF)            // Primary accent
-val ElectricBlue = Color(0xFF1E3A8A)        // Secondary 
-val PurpleHaze = Color(0xFF6B21A8)          // Tertiary
-val MetallicSilver = Color(0xFF94A3B8)      // Text secondary
-val GlowGreen = Color(0xFF10B981)           // Success/correct
-val CrimsonRed = Color(0xFFDC2626)          // Error/danger
-val AmberAlert = Color(0xFFF59E0B)          // Warning
-val DarkGrey = Color(0xFF1F2937)            // Surface
-val CharcoalGrey = Color(0xFF374151)        // Card backgrounds
-val LightCyan = Color(0xFFCCFFFF)           // On primary
-val WhiteSmoke = Color(0xFFF8FAFC)          // Primary text
+// � **NEW DARK THEME - E.S.C.A.P.E. AR (Student App)**
+// Vibe: Calm, Focused, Futuristic — Like a Learning Space in Low Light
+// Perfect for late-night study sessions, AR glows, and gentle contrast
 
-// Gradient colors for effects
-val NeonGradientStart = Color(0xFF00F5FF)
-val NeonGradientEnd = Color(0xFF6B21A8)
-val DarkGradientStart = Color(0xFF0A0E1A)
-val DarkGradientEnd = Color(0xFF1F2937)
+// ═══════════════════════════════════════════════════════════════
+// 🎨 CORE PALETTE - DARK THEME (Student App)
+// ═══════════════════════════════════════════════════════════════
 
-// Legacy colors (keeping for compatibility)
-val LabyrinthDark = Color(0xFF0A0A0F)
-val LabyrinthDeep = Color(0xFF151520)
-val LabyrinthMid = Color(0xFF1E1E2E)
-val LabyrinthLight = Color(0xFF2D2D42)
+// Primary - Misty Blue (Replaces purple; gives calm, techy confidence)
+val MistyBlue = Color(0xFF6BA6FF)           // Main brand - calm, confident blue
+val MistyBlueLight = Color(0xFF8FC4FF)      // Lighter for hover states
+val MistyBlueDark = Color(0xFF4A8EE8)       // Darker for active states
 
-// Accent Colors - Mysterious Purple/Blue
-val MysteriousBlue = Color(0xFF4C6EF5)
-val MysteriousPurple = Color(0xFF7C3AED)
-val MysteriousCyan = Color(0xFF06B6D4)
-val MysteriousViolet = Color(0xFF8B5CF6)
+// Accent - Electric Mint (Glows beautifully on dark backgrounds)
+val ElectricMint = Color(0xFF5EF1C3)        // AR glow effect, highlights
+val ElectricMintLight = Color(0xFF88F5D5)   // Lighter mint
+val ElectricMintDark = Color(0xFF3DD9AD)    // Darker mint
 
-// Status Colors
-val SuccessGreen = Color(0xFF10B981)
-val ErrorRed = Color(0xFFEF4444)
-val WarningAmber = Color(0xFFF59E0B)
+// Background & Surfaces - Navy-Tinted Darks (Not Pure Black)
+val CharcoalBlue = Color(0xFF0E1726)        // Deep background, easy on eyes
+val DeepSlate = Color(0xFF1B2735)           // Card/surface background, adds depth
+val ElevatedSlate = Color(0xFF2A3F54)       // Elevated surfaces
+val BorderSlate = Color(0xFF334155)         // Borders, dividers
+
+// Text Colors - Soft Contrast
+val OffWhite = Color(0xFFE2E8F0)            // Main text, not harsh white
+val CoolGray = Color(0xFF94A3B8)            // Secondary info, muted text
+val DimGray = Color(0xFF64748B)             // Disabled or tertiary text
+
+// Semantic Colors - Blend with Blue Tones
+val SoftEmerald = Color(0xFF34D399)         // Success, correct answers
+val GoldenGlow = Color(0xFFFACC15)          // Warnings, attention
+val CoralRed = Color(0xFFFB7185)            // Errors, friendly alert
+
+// ═══════════════════════════════════════════════════════════════
+// 🎨 LEGACY COMPATIBILITY MAPPING
+// Maps old color names to new theme for backwards compatibility
+// ═══════════════════════════════════════════════════════════════
+
+// Primary Colors (Purple → Blue Migration)
+val SoftPurple = MistyBlue                  // Old purple → New blue
+val SoftPurpleLight = MistyBlueLight
+val SoftPurpleDark = MistyBlueDark
+val BrandIndigo = MistyBlue                 // Old indigo → New blue
+val BrandIndigoDark = MistyBlueDark
+val PurpleHaze = MistyBlue
+val MysteriousPurple = MistyBlue
+val MysteriousViolet = MistyBlueLight
+
+// Accent Colors (Teal → Mint Migration)
+val SoftTeal = ElectricMint                 // Old teal → New mint
+val SoftTealLight = ElectricMintLight
+val SoftTealDark = ElectricMintDark
+val NeonCyan = ElectricMint                 // Old cyan → New mint
+val LightCyan = ElectricMintLight
+val MysteriousCyan = ElectricMint
+
+// Background & Surfaces
+val DarkNavy = CharcoalBlue                 // Old navy → New charcoal blue
+val DeepSpace = CharcoalBlue
+val DarkSlate = DeepSlate                   // Kept same name
+val DarkGray = ElevatedSlate
+val CharcoalGrey = DeepSlate
+val DarkGrey = DeepSlate
+val LabyrinthDark = CharcoalBlue
+val LabyrinthDeep = Color(0xFF0A1219)       // Even deeper variant
+val LabyrinthMid = DeepSlate
+val LabyrinthLight = ElevatedSlate
 
 // Text Colors
-val TextPrimary = Color(0xFFE5E7EB)
-val TextSecondary = Color(0xFF9CA3AF)
-val TextMuted = Color(0xFF6B7280)
+val TextWhite = OffWhite                    // Not pure white
+val TextLight = OffWhite
+val TextMuted = CoolGray
+val TextDisabled = DimGray
+val MetallicSilver = CoolGray
+val WhiteSmoke = OffWhite
+val TextPrimary = OffWhite
+val TextSecondary = CoolGray
 
-// Default Material colors (for compatibility)
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+// Semantic Colors
+val EmeraldGreen = SoftEmerald              // Success
+val EmeraldGreenLight = Color(0xFF6EE7B7)
+val GlowGreen = SoftEmerald
+val SuccessGreen = SoftEmerald
+
+val AmberWarm = GoldenGlow                  // Warning
+val AmberWarmLight = Color(0xFFFDE047)
+val AmberAlert = GoldenGlow
+val WarningAmber = GoldenGlow
+
+val RoseSoft = CoralRed                     // Error
+val RoseSoftLight = Color(0xFFFDA4AF)
+val CrimsonRed = CoralRed
+val ErrorRed = CoralRed
+
+// Blue Variants
+val ElectricBlue = MistyBlue
+val MysteriousBlue = MistyBlueDark
+
+// Gradient Colors (Blue-Mint)
+val NeonGradientStart = MistyBlue           // Start with misty blue
+val NeonGradientEnd = ElectricMint          // End with electric mint
+val DarkGradientStart = CharcoalBlue
+val DarkGradientEnd = DeepSlate
+
+// Default Material Colors (for compatibility)
+val Purple40 = MistyBlue                    // Maps to blue now
+val PurpleGrey40 = Color(0xFF5B6B7A)        // Cool gray variant
+val Pink40 = CoralRed                       // Maps to coral
