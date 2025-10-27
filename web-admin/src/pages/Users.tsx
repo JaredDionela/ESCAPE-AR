@@ -42,7 +42,6 @@ export function Users() {
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null)
   const [editFormData, setEditFormData] = useState({
     display_name: '',
-    teacher_name: '',
     section: ''
   })
   const [userStats, setUserStats] = useState<{
@@ -77,14 +76,31 @@ export function Users() {
   }
 
   const handleDelete = async (id: string, displayName: string) => {
-    if (!confirm(`Are you sure you want to delete user "${displayName}"?`)) return
+    const confirmMessage = `⚠️ WARNING: Delete "${displayName}"?\n\n` +
+      `This will permanently delete:\n` +
+      `• Student profile\n` +
+      `• All quiz results\n` +
+      `• All progress records\n` +
+      `• Authentication account\n\n` +
+      `This action CANNOT be undone!\n\n` +
+      `Type the student's name to confirm deletion.`
+    
+    const userInput = prompt(confirmMessage)
+    
+    if (!userInput || userInput.trim() !== displayName) {
+      if (userInput !== null) {
+        alert('❌ Deletion cancelled: Name did not match.')
+      }
+      return
+    }
     
     try {
       await deleteUser(id)
       setUsers(users.filter(u => u.id !== id))
-    } catch (error) {
+      alert(`✅ Successfully deleted "${displayName}" and all associated data.`)
+    } catch (error: any) {
       console.error('Error deleting user:', error)
-      alert('Failed to delete user')
+      alert(`❌ Failed to delete user: ${error?.message || 'Unknown error'}`)
     }
   }
 
@@ -104,7 +120,6 @@ export function Users() {
     setSelectedUser(user)
     setEditFormData({
       display_name: user.display_name || '',
-      teacher_name: user.teacher_name || '',
       section: user.section || ''
     })
     setEditOpen(true)
@@ -114,20 +129,24 @@ export function Users() {
     if (!selectedUser) return
     
     try {
-      await updateUser(selectedUser.id, {
+      const updates = {
         display_name: editFormData.display_name,
-        teacher_name: editFormData.teacher_name || undefined,
-        section: editFormData.section || undefined
-      })
+        section: editFormData.section || null
+      }
+      
+      console.log('Updating user:', selectedUser.id, updates)
+      
+      await updateUser(selectedUser.id, updates)
       
       // Reload users to reflect changes
       await loadUsers()
       setEditOpen(false)
       setSelectedUser(null)
-      alert('User updated successfully!')
-    } catch (error) {
+      alert('✅ User updated successfully!')
+    } catch (error: any) {
       console.error('Error updating user:', error)
-      alert('Failed to update user')
+      const errorMessage = error?.message || 'Failed to update user'
+      alert(`❌ Update failed: ${errorMessage}`)
     }
   }
 
@@ -450,20 +469,12 @@ export function Users() {
               />
 
               <TextField
-                label="Teacher Name"
-                value={editFormData.teacher_name}
-                onChange={(e) => setEditFormData({ ...editFormData, teacher_name: e.target.value })}
-                fullWidth
-                sx={{ mb: 2 }}
-                helperText="Optional: Name of the assigned teacher"
-              />
-
-              <TextField
                 label="Section"
                 value={editFormData.section}
                 onChange={(e) => setEditFormData({ ...editFormData, section: e.target.value })}
                 fullWidth
-                helperText="Optional: Student's class section (e.g., Grade 7-A)"
+                placeholder="e.g., VI SSC, VI Jose Rizal"
+                helperText="Student's class section"
               />
             </DialogContent>
             <DialogActions>

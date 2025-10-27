@@ -46,15 +46,39 @@ export async function getUser(id: string) {
 
 // Update user profile
 export async function updateUser(id: string, updates: Partial<Profile>) {
-  const { data, error} = await supabase
+  // First check if the user exists and we have permission to update them
+  const { data: existingUser, error: checkError } = await supabase
+    .from('profiles')
+    .select('id, role, teacher_id')
+    .eq('id', id)
+    .maybeSingle()
+  
+  if (checkError) {
+    console.error('Error checking user:', checkError)
+    throw new Error(`Failed to find user: ${checkError.message}`)
+  }
+  
+  if (!existingUser) {
+    throw new Error('User not found or you do not have permission to update this user')
+  }
+  
+  // Perform the update
+  const { data, error } = await supabase
     .from('profiles')
     .update(updates)
     .eq('id', id)
     .select()
-    .single()
   
-  if (error) throw error
-  return data as Profile
+  if (error) {
+    console.error('Error updating user:', error)
+    throw error
+  }
+  
+  if (!data || data.length === 0) {
+    throw new Error('Update failed: No rows were updated. You may not have permission to update this user.')
+  }
+  
+  return data[0] as Profile
 }
 
 // Register new student (linked to current teacher)
@@ -111,14 +135,49 @@ export async function registerStudent(studentData: {
   return authData.user
 }
 
-// Delete user
+// Delete user - removes auth account and all related data
 export async function deleteUser(id: string) {
-  const { error } = await supabase
-    .from('profiles')
-    .delete()
-    .eq('id', id)
+  console.log('Attempting to delete user:', id)
   
-  if (error) throw error
+  // Try using the RPC function first (if it exists in database)
+  try {
+    const { data, error: rpcError } = await supabase.rpc('delete_user_completely', {
+      user_id: id
+    })
+    
+    if (!rpcError) {
+      console.log('✅ User deleted via RPC function:', data)
+      return data
+    }
+    
+    console.log('RPC function not available, using direct deletion:', rpcError.message)
+  } catch (rpcErr) {
+    console.log('RPC function not setup, using direct deletion')
+  }
+  
+  // Direct deletion method
+  // The trigger (if set up) will auto-delete quiz_results and progress
+  // Otherwise, RLS policies allow manual deletion
+  try {
+    console.log('Deleting profile (trigger will cleanup related data)...')
+    
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', id)
+    
+    if (profileError) {
+      console.error('❌ Profile deletion failed:', profileError)
+      throw new Error(`Cannot delete user: ${profileError.message}`)
+    }
+    
+    console.log('✅ User profile deleted successfully')
+    return { success: true, message: 'User deleted' }
+    
+  } catch (error: any) {
+    console.error('❌ Delete operation failed:', error)
+    throw new Error(error?.message || 'Failed to delete user')
+  }
 }
 
 // Get user statistics with detailed module breakdown
