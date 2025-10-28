@@ -36,6 +36,7 @@ fun QuizScreen(
     android.util.Log.d("QuizScreen", "QuizScreen started with moduleId: '$moduleId'")
     
     val context = LocalContext.current
+    val audioManager = remember { com.example.escape_ar.utils.AudioManager.getInstance(context) }
     val quizViewModel: QuizViewModel = viewModel(
         factory = ViewModelProvider.AndroidViewModelFactory.getInstance(
             context.applicationContext as android.app.Application
@@ -164,7 +165,8 @@ fun QuizScreen(
                     score = 0
                     loadError = null
                 },
-                onNavigateBack = onNavigateBack
+                onNavigateBack = onNavigateBack,
+                audioManager = audioManager
             )
         }
         isLoadingQuestions -> {
@@ -179,7 +181,8 @@ fun QuizScreen(
                 onBack = { 
                     selectedModule = null
                     loadError = null
-                }
+                },
+                audioManager = audioManager
             )
         }
         !showResults -> {
@@ -231,7 +234,8 @@ fun QuizScreen(
                     }
                 },
                 onSubmitQuiz = {},
-                onNavigateBack = { selectedModule = null }
+                onNavigateBack = { selectedModule = null },
+                audioManager = audioManager
             )
         }
         else -> {
@@ -247,7 +251,8 @@ fun QuizScreen(
                     showResults = false
                     score = 0
                 },
-                onNavigateBackToModules = { selectedModule = null }
+                onNavigateBackToModules = { selectedModule = null },
+                audioManager = audioManager
             )
         }
     }
@@ -279,7 +284,8 @@ private fun LoadingScreen(moduleColor: androidx.compose.ui.graphics.Color) {
 private fun ErrorScreen(
     module: QuizModuleData,
     error: String?,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    audioManager: com.example.escape_ar.utils.AudioManager
 ) {
     Box(
         modifier = Modifier
@@ -311,7 +317,10 @@ private fun ErrorScreen(
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
             Button(
-                onClick = onBack,
+                onClick = { 
+                    audioManager.playButtonClick()
+                    onBack() 
+                },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = module.color
                 )
@@ -327,7 +336,8 @@ private fun ErrorScreen(
 private fun ModuleSelectionScreen(
     modules: List<QuizModuleData>,
     onModuleSelected: (QuizModuleData) -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    audioManager: com.example.escape_ar.utils.AudioManager
 ) {
     Box(
         modifier = Modifier
@@ -354,7 +364,10 @@ private fun ModuleSelectionScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = { 
+                        audioManager.playButtonClick()
+                        onNavigateBack() 
+                    }) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
@@ -406,7 +419,10 @@ private fun ModuleSelectionScreen(
                 items(modules) { module ->
                     ModuleCard(
                         module = module,
-                        onClick = { onModuleSelected(module) }
+                        onClick = { 
+                            audioManager.playButtonClick()
+                            onModuleSelected(module) 
+                        }
                     )
                 }
             }

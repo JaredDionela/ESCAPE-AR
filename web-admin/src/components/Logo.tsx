@@ -67,7 +67,7 @@ export function Logo({
           objectFit: 'contain',
           // Add contrast and visibility adjustments
           filter: color === 'white' 
-            ? 'invert(1)' // Invert colors for dark/blue backgrounds
+            ? 'brightness(1.2)' // Brighten slightly for dark backgrounds
             : 'brightness(0.3) contrast(1.5)', // Darken and enhance contrast for light backgrounds
           opacity: 1,
         }}

@@ -10,9 +10,9 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/UnityExport/unityLibrary" />
+            <option value="$PROJECT_DIR$/UnityExport/unityLibrary/xrmanifest.androidlib" />
             <option value="$PROJECT_DIR$/app" />
-            <option value="$PROJECT_DIR$/unityLibrary/unityLibrary" />
-            <option value="$PROJECT_DIR$/unityLibrary/unityLibrary/xrmanifest.androidlib" />
           </set>
         </option>
       </GradleProjectSettings>

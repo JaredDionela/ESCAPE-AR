@@ -30,9 +30,11 @@ import com.example.escape_ar.viewmodel.ModuleProgress
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToSettings: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val audioManager = remember { com.example.escape_ar.utils.AudioManager.getInstance(context) }
     
     // Check authentication first
     val sessionManager = remember { com.example.escape_ar.data.SessionManager.getInstance(context) }
@@ -143,7 +145,10 @@ fun ProfileScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = { 
+                        audioManager.playButtonClick()
+                        onNavigateBack() 
+                    }) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
@@ -298,6 +303,7 @@ fun ProfileScreen(
                         // Edit Profile Button
                         OutlinedButton(
                             onClick = {
+                                audioManager.playButtonClick()
                                 // Load current values from UI state
                                 editStudentName = uiState.userName
                                 editTeacherId = uiState.teacherId  // Load teacher UUID
@@ -313,6 +319,24 @@ fun ProfileScreen(
                             Icon(Icons.Default.Edit, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Edit Profile")
+                        }
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        // Settings Button
+                        OutlinedButton(
+                            onClick = { 
+                                audioManager.playButtonClick()
+                                onNavigateToSettings() 
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MistyBlue
+                            )
+                        ) {
+                            Icon(Icons.Default.Settings, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Settings")
                         }
                     }
                 }
@@ -390,7 +414,10 @@ fun ProfileScreen(
                         Text(text = uiState.error ?: "Unknown error", color = CrimsonRed)
                         Spacer(modifier = Modifier.height(8.dp))
                         Button(
-                            onClick = { viewModel.refreshData() },
+                            onClick = { 
+                                audioManager.playButtonClick()
+                                viewModel.refreshData() 
+                            },
                             colors = ButtonDefaults.buttonColors(containerColor = MistyBlue)
                         ) {
                             Text("Retry", color = CharcoalGrey)
@@ -645,7 +672,8 @@ fun ProfileScreen(
                 }
             },
             isSaving = isSaving,
-            error = saveError
+            error = saveError,
+            audioManager = audioManager
         )
     }
 }
@@ -763,7 +791,8 @@ private fun EditProfileDialog(
     onSave: () -> Unit,
     onResetPassword: () -> Unit,
     isSaving: Boolean,
-    error: String?
+    error: String?,
+    audioManager: com.example.escape_ar.utils.AudioManager
 ) {
     if (show) {
         AlertDialog(
@@ -868,7 +897,10 @@ private fun EditProfileDialog(
                                             )
                                         }
                                     },
-                                    onClick = { onTeacherSelect(teacher) },
+                                    onClick = { 
+                                        audioManager.playButtonClick()
+                                        onTeacherSelect(teacher) 
+                                    },
                                     leadingIcon = {
                                         Icon(
                                             Icons.Default.School,
@@ -900,7 +932,10 @@ private fun EditProfileDialog(
                     
                     // Reset Password Button
                     OutlinedButton(
-                        onClick = onResetPassword,
+                        onClick = { 
+                            audioManager.playButtonClick()
+                            onResetPassword() 
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !isSaving,
                         colors = ButtonDefaults.outlinedButtonColors(
@@ -921,7 +956,10 @@ private fun EditProfileDialog(
             },
             confirmButton = {
                 Button(
-                    onClick = onSave,
+                    onClick = { 
+                        audioManager.playButtonClick()
+                        onSave() 
+                    },
                     enabled = !isSaving && studentName.isNotBlank(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MistyBlue,
@@ -941,7 +979,10 @@ private fun EditProfileDialog(
             },
             dismissButton = {
                 TextButton(
-                    onClick = onDismiss,
+                    onClick = { 
+                        audioManager.playButtonClick()
+                        onDismiss() 
+                    },
                     enabled = !isSaving
                 ) {
                     Text("Cancel")

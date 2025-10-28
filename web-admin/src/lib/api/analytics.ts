@@ -396,48 +396,57 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
     const studentsNeedingHelp = uniqueStrugglingStudents.size
 
     // 5. Get top performer (only from teacher's students)
-    const { data: topPerformers, error: topError } = await supabase
+    // FIXED: Calculate final grade based on ALL 4 modules, not just completed ones
+    const { data: allProgress, error: topError } = await supabase
       .from('progress')
       .select(`
         user_id,
+        module,
         best_score,
-        profiles!inner(full_name)
+        profiles!inner(display_name)
       `)
-      .eq('completed', true)
       .in('user_id', studentIds)
     
     if (topError) {
       console.error('Error fetching top performers:', topError)
     }
 
-    console.log('Top performers raw data:', topPerformers)
+    console.log('All progress data for ranking:', allProgress)
 
-    // Calculate average score per user
-    const userScores = new Map<string, { totalScore: number; count: number; name: string }>()
-    topPerformers?.forEach((record: any) => {
+    // Calculate final grade per user across ALL 4 modules
+    const modules = ['decantation', 'organ_system', 'simple_machines', 'solar_system']
+    const userFinalGrades = new Map<string, { scores: Map<string, number>; name: string }>()
+    
+    allProgress?.forEach((record: any) => {
       const userId = record.user_id
-      const name = record.profiles?.full_name || 'Unknown'
-      console.log(`Processing user ${userId}: name=${name}, score=${record.best_score}`)
-      if (!userScores.has(userId)) {
-        userScores.set(userId, { totalScore: 0, count: 0, name })
+      const name = record.profiles?.display_name || 'Unknown'
+      if (!userFinalGrades.has(userId)) {
+        userFinalGrades.set(userId, { scores: new Map(), name })
       }
-      const userScore = userScores.get(userId)!
-      userScore.totalScore += record.best_score || 0
-      userScore.count += 1
+      const userData = userFinalGrades.get(userId)!
+      // Only keep the best score for each module
+      const currentScore = userData.scores.get(record.module) || 0
+      userData.scores.set(record.module, Math.max(currentScore, record.best_score || 0))
     })
 
-    console.log('User scores map:', Array.from(userScores.entries()))
+    console.log('User final grades map:', Array.from(userFinalGrades.entries()))
 
-    const topPerformerData = Array.from(userScores.entries())
-      .map(([userId, data]) => ({
-        userId,
-        name: data.name,
-        score: Math.round(data.totalScore / data.count),
-        modulesCompleted: data.count
-      }))
+    // Calculate final grade = average of all 4 modules (0 if not attempted)
+    const topPerformerData = Array.from(userFinalGrades.entries())
+      .map(([userId, data]) => {
+        const moduleScores = modules.map(module => data.scores.get(module) || 0)
+        const finalGrade = moduleScores.reduce((sum, score) => sum + score, 0) / 4
+        const modulesCompleted = Array.from(data.scores.keys()).length
+        return {
+          userId,
+          name: data.name,
+          score: Math.round(finalGrade),
+          modulesCompleted
+        }
+      })
       .sort((a, b) => b.score - a.score)[0] || null
 
-    console.log('Top performer final:', topPerformerData)
+    console.log('Top performer final (based on all 4 modules):', topPerformerData)
 
     // 6. Get recent completions (last 5, only for teacher's students)
     const { data: recentData, error: recentError } = await supabase

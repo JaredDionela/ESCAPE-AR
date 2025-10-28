@@ -32,7 +32,8 @@ fun QuizQuestionScreen(
     onPreviousQuestion: () -> Unit,
     onNextQuestion: () -> Unit,
     onSubmitQuiz: () -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    audioManager: com.example.escape_ar.utils.AudioManager
 ) {
     // Log for debugging
     android.util.Log.d("QuizComponents", "========= QuizDisplay called =========")
@@ -67,7 +68,10 @@ fun QuizQuestionScreen(
                     style = MaterialTheme.typography.titleLarge,
                     color = WhiteSmoke
                 )
-                Button(onClick = onNavigateBack) {
+                Button(onClick = { 
+                    audioManager.playButtonClick()
+                    onNavigateBack() 
+                }) {
                     Text("Go Back")
                 }
             }
@@ -111,7 +115,10 @@ fun QuizQuestionScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = { 
+                        audioManager.playButtonClick()
+                        onNavigateBack() 
+                    }) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
@@ -192,7 +199,10 @@ fun QuizQuestionScreen(
                             isSelected = selectedAnswer == index,
                             optionIndex = index,
                             moduleColor = module.color,
-                            onClick = { onAnswerSelected(currentQuestionIndex, index) }
+                            onClick = { 
+                                audioManager.playButtonClick()
+                                onAnswerSelected(currentQuestionIndex, index) 
+                            }
                         )
                     }
                 }
@@ -207,7 +217,10 @@ fun QuizQuestionScreen(
                     // Previous Button
                     if (currentQuestionIndex > 0) {
                         OutlinedButton(
-                            onClick = onPreviousQuestion,
+                            onClick = { 
+                                audioManager.playButtonClick()
+                                onPreviousQuestion() 
+                            },
                             colors = ButtonDefaults.outlinedButtonColors(
                                 contentColor = MetallicSilver
                             ),
@@ -229,7 +242,10 @@ fun QuizQuestionScreen(
                     
                     // Next/Finish Button
                     Button(
-                        onClick = onNextQuestion,
+                        onClick = { 
+                            audioManager.playButtonClick()
+                            onNextQuestion() 
+                        },
                         enabled = selectedAnswer != -1,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = module.color,
@@ -345,7 +361,8 @@ fun QuizResultsScreen(
     totalQuestions: Int,
     quizViewModel: com.example.escape_ar.viewmodel.QuizViewModel,
     onRetry: () -> Unit,
-    onNavigateBackToModules: () -> Unit
+    onNavigateBackToModules: () -> Unit,
+    audioManager: com.example.escape_ar.utils.AudioManager
 ) {
     // Progress is already saved by the QuizScreen when the quiz completes
     // No need to save it again here
@@ -474,7 +491,10 @@ fun QuizResultsScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         OutlinedButton(
-                            onClick = onRetry,
+                            onClick = { 
+                                audioManager.playButtonClick()
+                                onRetry() 
+                            },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.outlinedButtonColors(
                                 contentColor = MetallicSilver
@@ -490,7 +510,10 @@ fun QuizResultsScreen(
                         }
                         
                         Button(
-                            onClick = onNavigateBackToModules,
+                            onClick = { 
+                                audioManager.playButtonClick()
+                                onNavigateBackToModules() 
+                            },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MistyBlue,

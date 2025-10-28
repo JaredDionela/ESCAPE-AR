@@ -1,10 +1,13 @@
 package com.example.escape_ar
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -18,13 +21,50 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.escape_ar.data.SupabaseConfig
 import com.example.escape_ar.ui.screens.*
 import com.example.escape_ar.ui.theme.ESCAPEARTheme
+import com.example.escape_ar.unity.UnityBridge
+import com.example.escape_ar.unity.UnityHolderActivity
+import java.io.File
 
 class MainActivity : ComponentActivity() {
+    
+    // Audio manager for app-wide audio control
+    private lateinit var audioManager: com.example.escape_ar.utils.AudioManager
+    
+    // Unity activity launcher with result handling
+    private val unityLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        // Handle Unity exit
+        if (result.resultCode == UnityHolderActivity.UNITY_EXIT_CODE) {
+            android.util.Log.d("MainActivity", "Returned from Unity experience")
+            Toast.makeText(this, "Welcome back, Agent! 🎮", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // Initialize AudioManager
+        audioManager = com.example.escape_ar.utils.AudioManager.getInstance(this)
+        
+        // Load saved audio settings and start background music if enabled
+        val sharedPrefs = getSharedPreferences("escape_ar_settings", Context.MODE_PRIVATE)
+        val backgroundMusicEnabled = sharedPrefs.getBoolean("background_music", true)
+        val musicVolume = sharedPrefs.getFloat("music_volume", 0.5f)
+        val soundEffectsEnabled = sharedPrefs.getBoolean("sound_effects", true)
+        val effectsVolume = sharedPrefs.getFloat("effects_volume", 0.7f)
+        
+        audioManager.setMusicEnabled(backgroundMusicEnabled)
+        audioManager.setMusicVolume(musicVolume)
+        audioManager.setEffectsEnabled(soundEffectsEnabled)
+        audioManager.setEffectsVolume(effectsVolume)
+        
+        // Don't start background music here - it will start after successful login
+        
         setContent {
             ESCAPEARTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
@@ -37,22 +77,40 @@ class MainActivity : ComponentActivity() {
         }
     }
     
+    override fun onResume() {
+        super.onResume()
+        // Only resume background music if user is logged in
+        val sessionManager = com.example.escape_ar.data.SessionManager.getInstance(this)
+        val sharedPrefs = getSharedPreferences("escape_ar_settings", Context.MODE_PRIVATE)
+        
+        if (sessionManager.isLoggedIn() && sharedPrefs.getBoolean("background_music", true)) {
+            audioManager.resumeBackgroundMusic()
+        }
+    }
+    
+    override fun onPause() {
+        super.onPause()
+        // Pause background music when app goes to background
+        audioManager.pauseBackgroundMusic()
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        // Release audio resources
+        audioManager.release()
+    }
+    
     private fun startUnityActivity() {
+        android.util.Log.d("MainActivity", "startUnityActivity called")
+        
         try {
-            // Check if Unity library is available first
-            try {
-                Class.forName("com.unity3d.player.UnityPlayerGameActivity")
-            } catch (e: ClassNotFoundException) {
-                android.util.Log.w("MainActivity", "Unity PlayerGameActivity class not found - AR experience not available")
-                showUnityNotAvailableDialog()
-                return
-            }
-            
-                val unityIntent = Intent().setClassName(this, "com.unity3d.player.UnityPlayerGameActivity")
-                startActivity(unityIntent)
-                android.util.Log.d("MainActivity", "Unity activity launched")
+            // Try to launch Unity directly
+            val unityIntent = Intent(this, UnityHolderActivity::class.java)
+            unityLauncher.launch(unityIntent)
+            android.util.Log.d("MainActivity", "Unity activity launch attempted")
         } catch (e: Exception) {
             android.util.Log.e("MainActivity", "Failed to launch Unity AR experience", e)
+            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
             showUnityNotAvailableDialog()
         }
     }
@@ -90,15 +148,30 @@ fun AppNavigation(
         composable("loading") {
             val context = androidx.compose.ui.platform.LocalContext.current
             val sessionManager = com.example.escape_ar.data.SessionManager.getInstance(context)
+            val audioManager = remember { com.example.escape_ar.utils.AudioManager.getInstance(context) }
             
             LoadingScreen {
-                // Check if user is already authenticated
-                if (sessionManager.isLoggedIn()) {
+                // Check if terms have been accepted
+                val sharedPrefs = context.getSharedPreferences("escape_ar_settings", Context.MODE_PRIVATE)
+                val termsAccepted = sharedPrefs.getBoolean("terms_accepted", false)
+                
+                if (!termsAccepted) {
+                    // Show terms first
+                    android.util.Log.d("MainActivity", "Terms not accepted, showing T&C")
+                    navController.navigate("terms_and_conditions") {
+                        popUpTo("loading") { inclusive = true }
+                    }
+                } else if (sessionManager.isLoggedIn()) {
+                    // User already logged in - start background music
                     android.util.Log.d("MainActivity", "User already logged in, navigating to student")
+                    if (sharedPrefs.getBoolean("background_music", true)) {
+                        audioManager.startBackgroundMusic()
+                    }
                     navController.navigate("student") {
                         popUpTo("loading") { inclusive = true }
                     }
                 } else {
+                    // No session found, go to auth (no music on auth screen)
                     android.util.Log.d("MainActivity", "No session found, navigating to auth")
                     navController.navigate("auth") {
                         popUpTo("loading") { inclusive = true }
@@ -107,9 +180,23 @@ fun AppNavigation(
             }
         }
         
+        // Terms and Conditions Screen
+        composable("terms_and_conditions") {
+            TermsAndConditionsScreen(navController = navController)
+        }
+        
         composable("auth") {
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val audioManager = remember { com.example.escape_ar.utils.AudioManager.getInstance(context) }
+            
             AuthScreen(
                 onLoginSuccess = {
+                    // Start background music after successful login
+                    val sharedPrefs = context.getSharedPreferences("escape_ar_settings", Context.MODE_PRIVATE)
+                    if (sharedPrefs.getBoolean("background_music", true)) {
+                        audioManager.startBackgroundMusic()
+                    }
+                    
                     navController.navigate("student") {
                         popUpTo("auth") { inclusive = true }
                     }
@@ -136,9 +223,14 @@ fun AppNavigation(
                     navController.navigate("profile")
                 },
                 onUnityLaunch = {
-                    navController.navigate("unity")
+                    android.util.Log.d("MainActivity", "🎮 AR Button clicked - calling onStartUnity")
+                    onStartUnity()
                 },
                 onLogout = {
+                    // Stop background music when logging out
+                    val audioManager = com.example.escape_ar.utils.AudioManager.getInstance(context)
+                    audioManager.stopBackgroundMusic()
+                    
                     // Clear the session before navigating
                     val sessionManager = com.example.escape_ar.data.SessionManager.getInstance(context)
                     sessionManager.clearSession()
@@ -155,8 +247,89 @@ fun AppNavigation(
             ProfileScreen(
                 onNavigateBack = {
                     navController.popBackStack()
+                },
+                onNavigateToSettings = {
+                    navController.navigate("settings")
                 }
             )
+        }
+        
+        // Settings Screen
+        composable("settings") {
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val audioManager = remember { com.example.escape_ar.utils.AudioManager.getInstance(context) }
+            
+            SettingsScreen(
+                navController = navController,
+                onBackgroundMusicToggle = { enabled ->
+                    audioManager.setMusicEnabled(enabled)
+                    if (enabled) {
+                        audioManager.startBackgroundMusic()
+                    } else {
+                        audioManager.stopBackgroundMusic()
+                    }
+                    android.util.Log.d("MainActivity", "Background Music: $enabled")
+                },
+                onMusicVolumeChange = { volume ->
+                    audioManager.setMusicVolume(volume)
+                    android.util.Log.d("MainActivity", "Music Volume: ${(volume * 100).toInt()}%")
+                },
+                onSoundEffectsToggle = { enabled ->
+                    audioManager.setEffectsEnabled(enabled)
+                    android.util.Log.d("MainActivity", "Sound Effects: $enabled")
+                },
+                onEffectsVolumeChange = { volume ->
+                    audioManager.setEffectsVolume(volume)
+                    android.util.Log.d("MainActivity", "Effects Volume: ${(volume * 100).toInt()}%")
+                },
+                onWifiOnlyToggle = { enabled ->
+                    android.util.Log.d("MainActivity", "Wi-Fi Only: $enabled")
+                },
+                onClearCache = {
+                    // Clear Unity cache
+                    try {
+                        val unityDataDir = File(context.filesDir, "UnityCache")
+                        if (unityDataDir.exists()) {
+                            val deleted = unityDataDir.deleteRecursively()
+                            Toast.makeText(
+                                context, 
+                                if (deleted) "Cache cleared successfully" else "Failed to clear cache",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            Toast.makeText(context, "No cache to clear", Toast.LENGTH_SHORT).show()
+                        }
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            )
+        }
+        
+        // Edit Profile Screen
+        composable("edit_profile") {
+            EditProfileScreen(
+                navController = navController,
+                supabaseClient = SupabaseConfig.client
+            )
+        }
+        
+        // Change Password Screen
+        composable("change_password") {
+            ChangePasswordScreen(
+                navController = navController,
+                supabaseClient = SupabaseConfig.client
+            )
+        }
+        
+        // About Screen
+        composable("about") {
+            AboutScreen(navController = navController)
+        }
+        
+        // Settings Terms & Privacy Screen
+        composable("settings_terms") {
+            SettingsTermsScreen(navController = navController)
         }
         
         composable("quiz") {

@@ -264,3 +264,73 @@ export async function getUserLessonProgress(_userId: string) {
   console.info('Lesson progress tracking is handled by YouTube, not database');
   return [];
 }
+
+// Calculate final grade for a user across all 4 modules
+export async function getUserFinalGrade(userId: string): Promise<number> {
+  try {
+    const modules = ['decantation', 'organ_system', 'simple_machines', 'solar_system']
+    
+    const { data: progressData, error } = await supabase
+      .from('progress')
+      .select('module, best_score')
+      .eq('user_id', userId)
+      .in('module', modules)
+    
+    if (error) throw error
+
+    // Calculate average across all 4 modules (0 if not attempted)
+    const moduleScores = new Map<string, number>()
+    progressData?.forEach(p => {
+      moduleScores.set(p.module, p.best_score || 0)
+    })
+
+    const totalScore = modules.reduce((sum, module) => {
+      return sum + (moduleScores.get(module) || 0)
+    }, 0)
+
+    return Math.round(totalScore / 4)
+  } catch (error) {
+    console.error('Error calculating final grade:', error)
+    return 0
+  }
+}
+
+// Get final grades for multiple users at once (more efficient)
+export async function getUsersFinalGrades(userIds: string[]): Promise<Map<string, number>> {
+  try {
+    const modules = ['decantation', 'organ_system', 'simple_machines', 'solar_system']
+    
+    const { data: progressData, error } = await supabase
+      .from('progress')
+      .select('user_id, module, best_score')
+      .in('user_id', userIds)
+      .in('module', modules)
+    
+    if (error) throw error
+
+    // Build map of user -> module scores
+    const userModuleScores = new Map<string, Map<string, number>>()
+    
+    progressData?.forEach(p => {
+      if (!userModuleScores.has(p.user_id)) {
+        userModuleScores.set(p.user_id, new Map())
+      }
+      userModuleScores.get(p.user_id)!.set(p.module, p.best_score || 0)
+    })
+
+    // Calculate final grade for each user
+    const finalGrades = new Map<string, number>()
+    userIds.forEach(userId => {
+      const moduleScores = userModuleScores.get(userId)
+      const totalScore = modules.reduce((sum, module) => {
+        return sum + (moduleScores?.get(module) || 0)
+      }, 0)
+      finalGrades.set(userId, Math.round(totalScore / 4))
+    })
+
+    return finalGrades
+  } catch (error) {
+    console.error('Error calculating final grades:', error)
+    return new Map()
+  }
+}

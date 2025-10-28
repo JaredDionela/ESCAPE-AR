@@ -55,6 +55,7 @@ fun StudentMainScreen(
 ) {
     // Check authentication first
     val context = androidx.compose.ui.platform.LocalContext.current
+    val audioManager = remember { com.example.escape_ar.utils.AudioManager.getInstance(context) }
     val sessionManager = remember { com.example.escape_ar.data.SessionManager.getInstance(context) }
     
     // If not authenticated, trigger logout (which navigates to auth)
@@ -173,7 +174,7 @@ fun StudentMainScreen(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "E.S.C.A.P.E. AR Learning Platform",
+                            text = "Project E.S.C.A.P.E Learning Platform",
                             style = MaterialTheme.typography.bodyMedium,
                             color = CoolGray
                         )
@@ -183,14 +184,20 @@ fun StudentMainScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        IconButton(onClick = onProfileClick) {
+                        IconButton(onClick = { 
+                            audioManager.playButtonClick()
+                            onProfileClick() 
+                        }) {
                             Icon(
                                 Icons.Default.Person,
                                 contentDescription = "Profile",
                                 tint = CoolGray
                             )
                         }
-                        IconButton(onClick = onLogout) {
+                        IconButton(onClick = { 
+                            audioManager.playButtonClick()
+                            onLogout() 
+                        }) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ExitToApp,
                                 contentDescription = "Logout",
@@ -270,7 +277,10 @@ fun StudentMainScreen(
                                 
                                 // Gradient button with glow
                                 Button(
-                                    onClick = onUnityLaunch,
+                                    onClick = { 
+                                        audioManager.playButtonClick()
+                                        onUnityLaunch() 
+                                    },
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(56.dp),
@@ -383,7 +393,10 @@ fun StudentMainScreen(
                                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     OutlinedButton(
-                                        onClick = { onLessonsClick("decantation", "Decantation") },
+                                        onClick = { 
+                                            audioManager.playButtonClick()
+                                            onLessonsClick("decantation", "Decantation") 
+                                        },
                                         modifier = Modifier
                                             .weight(1f)
                                             .height(48.dp),
@@ -403,7 +416,10 @@ fun StudentMainScreen(
                                         )
                                     }
                                     OutlinedButton(
-                                        onClick = { onLessonsClick("organ_system", "Organ Systems") },
+                                        onClick = { 
+                                            audioManager.playButtonClick()
+                                            onLessonsClick("organ_system", "Organ Systems") 
+                                        },
                                         modifier = Modifier
                                             .weight(1f)
                                             .height(48.dp),
@@ -428,7 +444,10 @@ fun StudentMainScreen(
                                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     OutlinedButton(
-                                        onClick = { onLessonsClick("simple_machines", "Simple Machines") },
+                                        onClick = { 
+                                            audioManager.playButtonClick()
+                                            onLessonsClick("simple_machines", "Simple Machines") 
+                                        },
                                         modifier = Modifier
                                             .weight(1f)
                                             .height(48.dp),
@@ -448,7 +467,10 @@ fun StudentMainScreen(
                                         )
                                     }
                                     OutlinedButton(
-                                        onClick = { onLessonsClick("solar_system", "Solar System") },
+                                        onClick = { 
+                                            audioManager.playButtonClick()
+                                            onLessonsClick("solar_system", "Solar System") 
+                                        },
                                         modifier = Modifier
                                             .weight(1f)
                                             .height(48.dp),
@@ -532,7 +554,10 @@ fun StudentMainScreen(
                                 
                                 // Mint gradient button with glow
                                 Button(
-                                    onClick = { onQuizClick("") },
+                                    onClick = { 
+                                        audioManager.playButtonClick()
+                                        onQuizClick("") 
+                                    },
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(56.dp),
@@ -593,7 +618,8 @@ fun MissionBriefTab(
     isFullStoryMode: Boolean,
     onToggleStory: (Boolean) -> Unit,
     missionProgress: Float,
-    onUnityLaunch: () -> Unit
+    onUnityLaunch: () -> Unit,
+    audioManager: com.example.escape_ar.utils.AudioManager
 ) {
     LazyColumn(
         modifier = Modifier
@@ -708,7 +734,10 @@ fun MissionBriefTab(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         TextButton(
-                            onClick = { onToggleStory(!isFullStoryMode) }
+                            onClick = { 
+                                audioManager.playButtonClick()
+                                onToggleStory(!isFullStoryMode) 
+                            }
                         ) {
                             Text(
                                 text = if (isFullStoryMode) "Brief Summary" else "Full Briefing",
@@ -717,7 +746,10 @@ fun MissionBriefTab(
                         }
                         
                         Button(
-                            onClick = onUnityLaunch,
+                            onClick = { 
+                                audioManager.playButtonClick()
+                                onUnityLaunch() 
+                            },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = AmberAlert,
                                 contentColor = DeepSpace
@@ -747,7 +779,8 @@ fun TrainingModulesTab(
     quizModules: List<QuizModule>,
     onQuizClick: (String) -> Unit,
     learningProgress: Float,
-    onUnityLaunch: () -> Unit
+    onUnityLaunch: () -> Unit,
+    audioManager: com.example.escape_ar.utils.AudioManager
 ) {
     LazyColumn(
         modifier = Modifier
@@ -799,7 +832,10 @@ fun TrainingModulesTab(
         // AR Experience Button
         item {
             Button(
-                onClick = onUnityLaunch,
+                onClick = { 
+                    audioManager.playButtonClick()
+                    onUnityLaunch() 
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(64.dp),

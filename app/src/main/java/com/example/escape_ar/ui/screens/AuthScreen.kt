@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -25,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.escape_ar.R
 import com.example.escape_ar.ui.theme.*
+import com.example.escape_ar.utils.AudioManager
 import kotlinx.coroutines.launch
 import com.example.escape_ar.data.repository.UserRepository
 import com.example.escape_ar.data.repository.Teacher
@@ -36,6 +38,11 @@ fun AuthScreen(
     onLoginSuccess: () -> Unit
     // authViewModel: AuthViewModel = viewModel() // Temporarily disabled
 ) {
+    // Get context and create repository
+    val context = LocalContext.current
+    val audioManager = remember { AudioManager.getInstance(context) }
+    val repo = remember { UserRepository(context) }
+    
     var isLoginMode by remember { mutableStateOf(true) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -51,10 +58,6 @@ fun AuthScreen(
     var selectedTeacher by remember { mutableStateOf<Teacher?>(null) }
     var teachersLoading by remember { mutableStateOf(false) }
     var teachersExpanded by remember { mutableStateOf(false) }
-    
-    // Get context and create repository with proper context
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val repo = remember { UserRepository(context) }
     
     // Fetch teachers when switching to signup mode
     LaunchedEffect(isLoginMode) {
@@ -113,7 +116,7 @@ fun AuthScreen(
                     // Logo Image - BIGGER SIZE (33% larger)
                     Image(
                         painter = painterResource(id = R.drawable.logo),
-                        contentDescription = "E.S.C.A.P.E. AR Logo",
+                        contentDescription = "Project E.S.C.A.P.E Logo",
                         modifier = Modifier
                             .size(240.dp)  // Increased from 180dp to 240dp
                             .padding(16.dp),
@@ -150,7 +153,10 @@ fun AuthScreen(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         FilterChip(
-                            onClick = { isLoginMode = true },
+                            onClick = { 
+                                audioManager.playButtonClick()
+                                isLoginMode = true 
+                            },
                             label = { Text("Sign In") },
                             selected = isLoginMode,
                             colors = FilterChipDefaults.filterChipColors(
@@ -160,7 +166,10 @@ fun AuthScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         FilterChip(
-                            onClick = { isLoginMode = false },
+                            onClick = { 
+                                audioManager.playButtonClick()
+                                isLoginMode = false 
+                            },
                             label = { Text("Sign Up") },
                             selected = !isLoginMode,
                             colors = FilterChipDefaults.filterChipColors(
@@ -311,7 +320,10 @@ fun AuthScreen(
                             Icon(Icons.Default.Lock, contentDescription = null)
                         },
                         trailingIcon = {
-                            IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                            IconButton(onClick = { 
+                                audioManager.playButtonClick()
+                                isPasswordVisible = !isPasswordVisible 
+                            }) {
                                 Icon(
                                     if (isPasswordVisible) Icons.Default.Visibility 
                                     else Icons.Default.VisibilityOff,
@@ -353,6 +365,7 @@ fun AuthScreen(
                     // Submit button
                     Button(
                         onClick = {
+                            audioManager.playButtonClick()
                             android.util.Log.d("AuthScreen", "Button clicked, mode: ${if (isLoginMode) "login" else "signup"}")
                             
                             // Validate signup fields
@@ -387,14 +400,17 @@ fun AuthScreen(
                                     isLoading = false
                                     result.onSuccess { 
                                         android.util.Log.d("AuthScreen", "Authentication successful!")
+                                        audioManager.playSuccess()
                                         onLoginSuccess() 
                                     }.onFailure { 
                                         android.util.Log.e("AuthScreen", "Authentication failed: ${it.message}")
+                                        audioManager.playError()
                                         errorMessage = it.message ?: "Authentication failed" 
                                     }
                                 } catch (e: Exception) {
                                     android.util.Log.e("AuthScreen", "Exception during authentication", e)
                                     isLoading = false
+                                    audioManager.playError()
                                     errorMessage = "Authentication error: ${e.message}"
                                 }
                             }

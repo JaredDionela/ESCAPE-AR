@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ThemeProvider, CssBaseline } from '@mui/material'
 import { AuthProvider } from './contexts/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { LandingPage } from './pages/LandingPage'
 import { Login } from './pages/Login'
 import { RegisterTeacher } from './pages/RegisterTeacher'
 import { AdminLayout } from './components/layout/AdminLayout'
@@ -26,13 +27,14 @@ function App() {
           <AuthProvider>
             <Routes>
               {/* Public Routes */}
+              <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<RegisterTeacher />} />
               
-              {/* Protected Routes */}
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              {/* Protected Admin Routes */}
+              <Route path="/dashboard" element={<Navigate to="/admin/dashboard" replace />} />
               <Route 
-                path="/dashboard" 
+                path="/admin/dashboard" 
                 element={
                   <ProtectedRoute>
                     <AdminLayout><Dashboard /></AdminLayout>
@@ -40,7 +42,7 @@ function App() {
                 } 
               />
               <Route 
-                path="/lessons" 
+                path="/admin/lessons" 
                 element={
                   <ProtectedRoute>
                     <AdminLayout><Lessons /></AdminLayout>
@@ -48,7 +50,7 @@ function App() {
                 } 
               />
               <Route 
-                path="/quiz" 
+                path="/admin/quiz" 
                 element={
                   <ProtectedRoute>
                     <AdminLayout><QuizModules /></AdminLayout>
@@ -56,7 +58,7 @@ function App() {
                 } 
               />
               <Route 
-                path="/quiz/:moduleId" 
+                path="/admin/quiz/:moduleId" 
                 element={
                   <ProtectedRoute>
                     <AdminLayout><QuizModulePage /></AdminLayout>
@@ -64,7 +66,7 @@ function App() {
                 } 
               />
               <Route 
-                path="/users" 
+                path="/admin/users" 
                 element={
                   <ProtectedRoute>
                     <AdminLayout><Users /></AdminLayout>
@@ -72,7 +74,7 @@ function App() {
                 } 
               />
               <Route 
-                path="/analytics" 
+                path="/admin/analytics" 
                 element={
                   <ProtectedRoute>
                     <AdminLayout><Analytics /></AdminLayout>
@@ -80,13 +82,21 @@ function App() {
                 } 
               />
               <Route 
-                path="/settings" 
+                path="/admin/settings" 
                 element={
                   <ProtectedRoute>
                     <AdminLayout><Settings /></AdminLayout>
                   </ProtectedRoute>
                 } 
               />
+              
+              {/* Legacy routes - redirect to new admin paths */}
+              <Route path="/lessons" element={<Navigate to="/admin/lessons" replace />} />
+              <Route path="/quiz" element={<Navigate to="/admin/quiz" replace />} />
+              <Route path="/quiz/:moduleId" element={<Navigate to="/admin/quiz/:moduleId" replace />} />
+              <Route path="/users" element={<Navigate to="/admin/users" replace />} />
+              <Route path="/analytics" element={<Navigate to="/admin/analytics" replace />} />
+              <Route path="/settings" element={<Navigate to="/admin/settings" replace />} />
             </Routes>
           </AuthProvider>
         </BrowserRouter>

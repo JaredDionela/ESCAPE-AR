@@ -31,7 +31,7 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import QuizIcon from '@mui/icons-material/Quiz'
 import PercentIcon from '@mui/icons-material/Percent'
 import InfoIcon from '@mui/icons-material/Info'
-import { getAllUsers, deleteUser, getUserStats, updateUser } from '../lib/api/users'
+import { getAllUsers, deleteUser, getUserStats, updateUser, getUsersFinalGrades } from '../lib/api/users'
 import type { Profile } from '../types/database.types'
 
 export function Users() {
@@ -40,6 +40,7 @@ export function Users() {
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null)
+  const [finalGrades, setFinalGrades] = useState<Map<string, number>>(new Map())
   const [editFormData, setEditFormData] = useState({
     display_name: '',
     section: ''
@@ -68,6 +69,13 @@ export function Users() {
     try {
       const data = await getAllUsers()
       setUsers(data)
+      
+      // Load final grades for all users
+      if (data.length > 0) {
+        const userIds = data.map(u => u.id)
+        const grades = await getUsersFinalGrades(userIds)
+        setFinalGrades(grades)
+      }
     } catch (error) {
       console.error('Error loading users:', error)
     } finally {
@@ -182,55 +190,70 @@ export function Users() {
               <TableCell><strong>User</strong></TableCell>
               <TableCell><strong>Teacher</strong></TableCell>
               <TableCell><strong>Section</strong></TableCell>
-              <TableCell><strong>Joined</strong></TableCell>
+              <TableCell align="center"><strong>Final Grade</strong></TableCell>
               <TableCell><strong>Actions</strong></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id} hover>
-                <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Avatar 
-                      src={user.avatar_url || undefined}
-                      sx={{ width: 32, height: 32 }}
+            {users.map((user) => {
+              const finalGrade = finalGrades.get(user.id) || 0
+              return (
+                <TableRow key={user.id} hover>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Avatar 
+                        src={user.avatar_url || undefined}
+                        sx={{ width: 32, height: 32 }}
+                      >
+                        {user.display_name.charAt(0)}
+                      </Avatar>
+                      <Typography>{user.display_name}</Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell>{user.teacher_name || '—'}</TableCell>
+                  <TableCell>{user.section || '—'}</TableCell>
+                  <TableCell align="center">
+                    <Chip 
+                      label={`${finalGrade}%`}
+                      size="small"
+                      color={
+                        finalGrade >= 90 ? 'success' : 
+                        finalGrade >= 75 ? 'primary' : 
+                        finalGrade >= 50 ? 'warning' : 
+                        'error'
+                      }
+                      sx={{ fontWeight: 'bold', minWidth: 60 }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <IconButton 
+                      color="primary" 
+                      size="small"
+                      onClick={() => handleViewDetails(user)}
+                      title="View details"
                     >
-                      {user.display_name.charAt(0)}
-                    </Avatar>
-                    <Typography>{user.display_name}</Typography>
-                  </Box>
-                </TableCell>
-                <TableCell>{user.teacher_name || '—'}</TableCell>
-                <TableCell>{user.section || '—'}</TableCell>
-                <TableCell>{formatDate(user.created_at)}</TableCell>
-                <TableCell>
-                  <IconButton 
-                    color="primary" 
-                    size="small"
-                    onClick={() => handleViewDetails(user)}
-                    title="View details"
-                  >
-                    <VisibilityIcon />
-                  </IconButton>
-                  <IconButton 
-                    color="secondary" 
-                    size="small"
-                    onClick={() => handleEditUser(user)}
-                    title="Edit user"
-                  >
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton 
-                    color="error" 
-                    size="small"
-                    onClick={() => handleDelete(user.id, user.display_name)}
-                    title="Delete user"
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
+                      <VisibilityIcon />
+                    </IconButton>
+                    <IconButton 
+                      color="secondary" 
+                      size="small"
+                      onClick={() => handleEditUser(user)}
+                      title="Edit user"
+                    >
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton 
+                      color="error" 
+                      size="small"
+                      onClick={() => handleDelete(user.id, user.display_name)}
+                      title="Delete user"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
           </TableBody>
         </Table>
       </TableContainer>

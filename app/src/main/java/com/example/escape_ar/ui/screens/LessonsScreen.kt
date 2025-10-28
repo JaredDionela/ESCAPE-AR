@@ -45,6 +45,7 @@ fun LessonsScreen(
     onLessonClick: (lessonId: String, lessonTitle: String, youtubeVideoId: String) -> Unit = { _, _, _ -> }
 ) {
     val context = LocalContext.current
+    val audioManager = remember { com.example.escape_ar.utils.AudioManager.getInstance(context) }
     val sessionManager = remember { SessionManager.getInstance(context) }
     val repository = remember { LessonRepository() }
     val scope = rememberCoroutineScope()
@@ -103,9 +104,12 @@ fun LessonsScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(onClick = { 
+                        audioManager.playButtonClick()
+                        onBackClick() 
+                    }) {
                         Icon(
-                            Icons.Default.ArrowBack,
+                            imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back",
                             tint = MistyBlue
                         )
@@ -191,6 +195,7 @@ fun LessonsScreen(
                                 lesson = lesson,
                                 progress = progress,
                                 onLessonClick = {
+                                    audioManager.playButtonClick()
                                     // Navigate to in-app video player
                                     onLessonClick(lesson.id, lesson.title, lesson.youtubeVideoId ?: "")
                                 }

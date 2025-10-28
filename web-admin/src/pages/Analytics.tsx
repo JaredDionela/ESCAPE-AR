@@ -146,54 +146,86 @@ export function Analytics() {
       ]);
       const activeUsers = activeUserIds.size;
 
-      // Get top performers using progress table (best scores)
-      // Show ALL quiz attempts, not just completed (70%+) ones
-      const { data: topPerformersData, error: performersError } = await supabase
+      // Get current teacher's students for filtering
+      const { data: { user } } = await supabase.auth.getUser();
+      const teacherId = user?.id;
+      
+      let studentIds: string[] = [];
+      if (teacherId) {
+        const { data: teacherStudents } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('teacher_id', teacherId)
+          .eq('role', 'student');
+        
+        studentIds = teacherStudents?.map(s => s.id) || [];
+      }
+
+      // Get top performers - calculate final grade across ALL 4 modules
+      // FIXED: Students must be ranked by average of all 4 modules, not just completed ones
+      const { data: allProgressData, error: performersError } = await supabase
         .from('progress')
         .select(`
           user_id,
+          module,
           best_score,
-          completed,
           profiles!inner(display_name)
         `)
-        .order('best_score', { ascending: false });
+        .in('user_id', studentIds.length > 0 ? studentIds : ['00000000-0000-0000-0000-000000000000']);
       
       if (performersError) {
         console.error('Error fetching top performers:', performersError);
       }
 
-      // Group by user and calculate their average score across all completed modules
-      const userScores = new Map<string, { name: string; scores: number[]; completed: number }>();
+      // Calculate final grade for each user across ALL 4 modules
+      const modules = ['decantation', 'organ_system', 'simple_machines', 'solar_system'];
+      const userFinalGrades = new Map<string, { 
+        name: string; 
+        moduleScores: Map<string, number>; 
+      }>();
       
-      topPerformersData?.forEach((record: any) => {
+      allProgressData?.forEach((record: any) => {
         const userId = record.user_id;
         const userName = record.profiles?.display_name || 'Anonymous';
+        const module = record.module;
         const score = record.best_score || 0;
         
-        if (!userScores.has(userId)) {
-          userScores.set(userId, { name: userName, scores: [], completed: 0 });
+        if (!userFinalGrades.has(userId)) {
+          userFinalGrades.set(userId, { 
+            name: userName, 
+            moduleScores: new Map() 
+          });
         }
         
-        const user = userScores.get(userId)!;
-        user.scores.push(score);
-        user.completed += 1;
+        const user = userFinalGrades.get(userId)!;
+        // Only keep the best score for each module
+        const currentScore = user.moduleScores.get(module) || 0;
+        user.moduleScores.set(module, Math.max(currentScore, score));
       });
 
-      const topPerformers = Array.from(userScores.values())
-        .map(user => ({
-          name: user.name,
-          score: Math.round(user.scores.reduce((sum, s) => sum + s, 0) / user.scores.length),
-          completed: user.completed
-        }))
+      // Calculate final grade = average of all 4 modules (0 if not attempted)
+      const topPerformers = Array.from(userFinalGrades.entries())
+        .map(([_userId, user]) => {
+          const moduleScores = modules.map(module => user.moduleScores.get(module) || 0);
+          const finalGrade = moduleScores.reduce((sum, score) => sum + score, 0) / 4;
+          const modulesCompleted = Array.from(user.moduleScores.keys()).length;
+          
+          return {
+            name: user.name,
+            score: Math.round(finalGrade),
+            completed: modulesCompleted
+          };
+        })
         .sort((a, b) => {
-          // Sort by score first, then by completed count
+          // Sort by final grade (average of all 4 modules)
           if (b.score !== a.score) return b.score - a.score;
+          // If same grade, prefer more modules completed
           return b.completed - a.completed;
         })
-        .slice(0, 5);
+        .slice(0, 10); // Show top 10 instead of top 5
 
       // Get module progress - track quiz completions from progress table
-      const modules = [
+      const moduleList = [
         { id: 'decantation', name: 'Decantation' },
         { id: 'organ_system', name: 'Organ System' },
         { id: 'simple_machines', name: 'Simple Machines' },
@@ -201,7 +233,7 @@ export function Analytics() {
       ];
 
       const moduleProgress = await Promise.all(
-        modules.map(async (module) => {
+        moduleList.map(async (module) => {
           // Get total unique users who attempted this module
           const { data: totalAttempts, error: totalError } = await supabase
             .from('progress')

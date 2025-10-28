@@ -39,7 +39,17 @@
             </intent-filter>
         </activity>
 
-    <!-- Unity activity provided by the embedded Unity library will be launched reflectively. -->
+        <!-- Unity Holder Activity for AR Experience -->
+        <activity
+            android:name=".unity.UnityHolderActivity"
+            android:exported="false"
+            android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|fontScale|layoutDirection|density"
+            android:hardwareAccelerated="true"
+            android:label="ESCAPE AR Experience"
+            android:launchMode="singleTask"
+            android:process=":unity"
+            android:screenOrientation="fullSensor"
+            android:theme="@style/BaseUnityGameActivityTheme" />
         
     </application>
 

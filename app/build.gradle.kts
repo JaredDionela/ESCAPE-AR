@@ -128,9 +128,7 @@ dependencies {
     implementation("com.pierfrancescosoffritti.androidyoutubeplayer:core:12.1.0")
     
     // Unity as a Library (enabled)
-    // TEMPORARILY DISABLED TO BUILD WITHOUT UNITY (for testing new features)
-    // Uncomment when you need Unity AR features or have freed up disk space:
-    // implementation(project(":unityLibrary"))
+    implementation(project(":unityLibrary"))
     // Explicit dependencies required for subclassing UnityPlayerGameActivity
     implementation("androidx.games:games-activity:3.0.5")
     implementation("androidx.appcompat:appcompat:1.6.1")

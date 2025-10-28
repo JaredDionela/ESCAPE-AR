@@ -23,12 +23,12 @@ interface AdminLayoutProps {
 }
 
 const menuItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
-  { text: 'Lessons', icon: <SchoolIcon />, path: '/lessons' },
-  { text: 'Quizzes', icon: <QuizIcon />, path: '/quiz' },
-  { text: 'Users', icon: <PeopleIcon />, path: '/users' },
-  { text: 'Analytics', icon: <BarChartIcon />, path: '/analytics' },
-  { text: 'Settings', icon: <SettingsIcon />, path: '/settings' }
+  { text: 'Dashboard', icon: <DashboardIcon />, path: '/admin/dashboard' },
+  { text: 'Lessons', icon: <SchoolIcon />, path: '/admin/lessons' },
+  { text: 'Quizzes', icon: <QuizIcon />, path: '/admin/quiz' },
+  { text: 'Users', icon: <PeopleIcon />, path: '/admin/users' },
+  { text: 'Analytics', icon: <BarChartIcon />, path: '/admin/analytics' },
+  { text: 'Settings', icon: <SettingsIcon />, path: '/admin/settings' }
 ]
 
 export function AdminLayout({ children }: AdminLayoutProps) {
@@ -72,7 +72,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     <div>
       <Toolbar 
         sx={{ 
-          background: '#FFFFFF',
+          background: '#3B82F6',
           color: 'white',
           minHeight: 70,
           display: 'flex',
@@ -82,16 +82,15 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         }}
       >
         <Box sx={{ 
-          backgroundColor: '#F8F9FA',
+          backgroundColor: '#3B82F6',
           borderRadius: 2,
           padding: 1.5,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          width: '100%',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+          width: '100%'
         }}>
-          <Logo variant="icon" size="medium" color="primary" />
+          <Logo variant="icon" size="medium" color="white" />
         </Box>
       </Toolbar>
       <Divider />
