@@ -16,6 +16,8 @@ import ScienceIcon from '@mui/icons-material/Science'
 export function LandingPage() {
   const navigate = useNavigate()
 
+  console.log('🏠 LandingPage rendered!')
+
   const handleDownloadAPK = () => {
     // TODO: Replace with actual APK download URL
     window.open('https://github.com/JaredDionela/ESCAPE-AR/releases/latest', '_blank')
