@@ -59,17 +59,13 @@ export function LandingPage() {
             <Stack spacing={3}>
               {/* Logo/Icon */}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <img 
-                  src="/logo.png" 
-                  alt="Project E.S.C.A.P.E Logo" 
-                  style={{ height: 80, width: 'auto' }}
-                />
+                
                 <Typography
                   variant="h2"
                   fontWeight="bold"
                   sx={{ color: 'white' }}
                 >
-                  Project E.S.C.A.P.E
+                 
                 </Typography>
               </Box>
 
