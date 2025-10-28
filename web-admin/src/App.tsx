@@ -19,6 +19,7 @@ import { theme } from './theme/theme'
 const queryClient = new QueryClient()
 
 function App() {
+  console.log('🚀 App component rendered')
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
