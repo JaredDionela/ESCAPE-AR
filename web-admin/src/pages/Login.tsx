@@ -43,7 +43,7 @@ export function Login() {
       if (error) {
         setError(error.message)
       } else {
-        navigate('/dashboard')
+        navigate('/admin/dashboard')
       }
     } catch (err) {
       setError('An unexpected error occurred')
