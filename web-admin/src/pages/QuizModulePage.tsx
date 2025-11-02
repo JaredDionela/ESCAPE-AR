@@ -204,7 +204,7 @@ export default function QuizModulePage() {
           <Link
             component="button"
             variant="body1"
-            onClick={() => navigate('/quiz')}
+            onClick={() => navigate('/admin/quiz')}
             sx={{ textDecoration: 'none', cursor: 'pointer' }}
           >
             Quiz Management
@@ -214,7 +214,7 @@ export default function QuizModulePage() {
 
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <IconButton onClick={() => navigate('/quiz')} sx={{ bgcolor: 'action.hover' }}>
+            <IconButton onClick={() => navigate('/admin/quiz')} sx={{ bgcolor: 'action.hover' }}>
               <BackIcon />
             </IconButton>
             <Box>

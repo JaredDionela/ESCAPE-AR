@@ -94,7 +94,6 @@ function App() {
               {/* Legacy routes - redirect to new admin paths */}
               <Route path="/lessons" element={<Navigate to="/admin/lessons" replace />} />
               <Route path="/quiz" element={<Navigate to="/admin/quiz" replace />} />
-              <Route path="/quiz/:moduleId" element={<Navigate to="/admin/quiz/:moduleId" replace />} />
               <Route path="/users" element={<Navigate to="/admin/users" replace />} />
               <Route path="/analytics" element={<Navigate to="/admin/analytics" replace />} />
               <Route path="/settings" element={<Navigate to="/admin/settings" replace />} />

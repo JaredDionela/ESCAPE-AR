@@ -81,7 +81,7 @@ export default function QuizModules() {
                 }}
               >
                 <CardActionArea
-                  onClick={() => navigate(`/quiz/${module.id}`)}
+                  onClick={() => navigate(`/admin/quiz/${module.id}`)}
                   sx={{
                     height: '100%',
                     display: 'flex',
